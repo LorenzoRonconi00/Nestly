@@ -1,0 +1,15 @@
+package com.nestly.backend.config;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.UUID;
+
+public final class CurrentUser {
+
+    private CurrentUser() {
+    }
+
+    public static UUID id() {
+        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+}

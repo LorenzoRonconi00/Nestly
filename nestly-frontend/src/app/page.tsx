@@ -1,24 +1,51 @@
-async function getBackendHealth() {
-  try {
-    const res = await fetch("http://localhost:8080/actuator/health", { cache: "no-store" });
-    if (!res.ok) return { status: "UNREACHABLE" };
-    return res.json();
-  } catch {
-    return { status: "UNREACHABLE" };
-  }
-}
+"use client";
 
-export default async function Home() {
-  const health = await getBackendHealth();
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { apiFetch } from "@/lib/api";
+import { clearToken, getToken } from "@/lib/auth";
+
+type Me = { userId: string; email: string };
+
+export default function Home() {
+  const [me, setMe] = useState<Me | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    apiFetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setMe(data))
+      .finally(() => setLoading(false));
+  }, []);
+
+  function handleLogout() {
+    clearToken();
+    setMe(null);
+  }
+
+  if (loading) return null;
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold">Nestly</h1>
-        <p className="mt-2">
-          Backend status: <span className="font-mono">{health.status}</span>
-        </p>
-      </div>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <h1 className="text-2xl font-semibold">Nestly</h1>
+      {me ? (
+        <>
+          <p>Logged in as {me.email}</p>
+          <button onClick={handleLogout} className="rounded bg-black px-3 py-2 text-white">
+            Logout
+          </button>
+        </>
+      ) : (
+        <div className="flex gap-4">
+          <Link href="/login" className="underline">Login</Link>
+          <Link href="/register" className="underline">Register</Link>
+        </div>
+      )}
     </main>
   );
 }
