@@ -13,3 +13,6 @@ nestly-frontend/.env*.local
 .idea/
 *.iml
 .vscode/
+
+# Root env
+.env
