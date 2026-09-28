@@ -2,11 +2,18 @@ package com.nestly.backend.controller;
 
 import com.nestly.backend.config.CurrentUser;
 import com.nestly.backend.domain.Page;
+import com.nestly.backend.domain.Section;
 import com.nestly.backend.dto.PageResponse;
 import com.nestly.backend.dto.SectionResponse;
+import com.nestly.backend.dto.UpdateSectionDataRequest;
 import com.nestly.backend.service.PageService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,6 +39,17 @@ public class PageController {
     @GetMapping("/by-number/{number}")
     public PageResponse getByNumber(@PathVariable UUID agendaId, @PathVariable int number) {
         return toResponse(pageService.getOrCreateByNumber(agendaId, CurrentUser.id(), number));
+    }
+
+    @PatchMapping("/{pageId}/sections/{sectionId}")
+    public SectionResponse updateSection(
+            @PathVariable UUID agendaId,
+            @PathVariable UUID pageId,
+            @PathVariable UUID sectionId,
+            @Valid @RequestBody UpdateSectionDataRequest request) {
+        Section section = pageService.updateSectionData(agendaId, pageId, sectionId, CurrentUser.id(), request.data());
+        return new SectionResponse(section.getId(), section.getType().getValue(), section.getOrder(),
+                section.getData());
     }
 
     private PageResponse toResponse(Page page) {

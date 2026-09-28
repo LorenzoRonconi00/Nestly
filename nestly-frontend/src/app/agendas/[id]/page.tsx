@@ -46,6 +46,11 @@ export default function AgendaSummaryPage() {
                         <li key={s.type}>{s.type}</li>
                     ))}
             </ul>
+            {agenda.baseTemplate !== "notebook" && (
+                <a href={`/agendas/${agenda.id}/pages/date/${new Date().toISOString().slice(0, 10)}`} className="underline">
+                    Open today&apos;s page
+                </a>
+            )}
             <Link href="/" className="underline">Back to home</Link>
         </main>
     );

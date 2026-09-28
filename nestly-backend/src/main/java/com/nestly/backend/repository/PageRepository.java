@@ -12,4 +12,6 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
     Optional<Page> findByAgendaIdAndPageDate(UUID agendaId, LocalDate pageDate);
 
     Optional<Page> findByAgendaIdAndPageNumber(UUID agendaId, Integer pageNumber);
+
+    Optional<Page> findByIdAndAgendaId(UUID id, UUID agendaId);
 }

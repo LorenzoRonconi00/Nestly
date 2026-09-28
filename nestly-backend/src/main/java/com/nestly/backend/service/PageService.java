@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -51,6 +52,17 @@ public class PageService {
 
     public List<Section> getSections(UUID pageId) {
         return sectionRepository.findAllByPageIdOrderByOrderAsc(pageId);
+    }
+
+    public Section updateSectionData(UUID agendaId, UUID pageId, UUID sectionId, UUID userId,
+            Map<String, Object> data) {
+        Agenda agenda = agendaService.getForUser(agendaId, userId);
+        Page page = pageRepository.findByIdAndAgendaId(pageId, agenda.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found"));
+        Section section = sectionRepository.findByIdAndPageId(sectionId, page.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        section.setData(data);
+        return sectionRepository.save(section);
     }
 
     private Page createPage(Agenda agenda, Page page) {
