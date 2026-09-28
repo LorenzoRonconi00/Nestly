@@ -9,3 +9,8 @@ spring:
     show-sql: true
   flyway:
     enabled: true
+
+nestly:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-not-for-production-32-chars-minimum-secret-key}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}
