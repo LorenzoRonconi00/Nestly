@@ -1,0 +1,15 @@
+# Backend
+nestly-backend/target/
+nestly-backend/.env
+nestly-backend/application-dev-local.yml
+
+# Frontend
+nestly-frontend/node_modules/
+nestly-frontend/.next/
+nestly-frontend/.env.local
+nestly-frontend/.env*.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
