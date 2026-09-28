@@ -50,6 +50,10 @@ public class Agenda {
         this.createdAt = Instant.now();
     }
 
+    public void setStructureTemplate(StructureTemplate structureTemplate) {
+        this.structureTemplate = structureTemplate;
+    }
+
     public UUID getId() {
         return id;
     }

@@ -26,6 +26,12 @@ public class AgendaService {
         return agendaRepository.save(agenda);
     }
 
+    public Agenda updateStructureTemplate(UUID id, UUID userId, StructureTemplate structureTemplate) {
+        Agenda agenda = getForUser(id, userId);
+        agenda.setStructureTemplate(structureTemplate);
+        return agendaRepository.save(agenda);
+    }
+
     public List<Agenda> listForUser(UUID userId) {
         return agendaRepository.findAllByUserId(userId);
     }

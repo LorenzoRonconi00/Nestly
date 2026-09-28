@@ -36,6 +36,7 @@ export default function Home() {
       {me ? (
         <>
           <p>Logged in as {me.email}</p>
+          <Link href="/agendas/new" className="underline">New agenda</Link>
           <button onClick={handleLogout} className="rounded bg-black px-3 py-2 text-white">
             Logout
           </button>
