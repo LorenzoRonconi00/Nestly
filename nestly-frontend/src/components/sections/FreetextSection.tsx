@@ -8,7 +8,7 @@ type Props = {
     onSave: (data: Record<string, unknown>) => void;
 };
 
-export function FreetextSection({ initialData, onSave }: Props) {
+export function FreetextSection({ initialData, onSave }: Readonly<Props>) {
     const [text, setText] = useState((initialData.text as string) ?? "");
 
     useAutosave(text, (value) => onSave({ text: value }));

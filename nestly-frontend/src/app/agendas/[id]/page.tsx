@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { todayLocal } from "@/lib/date";
 
 type Agenda = {
     id: string;
@@ -46,11 +47,16 @@ export default function AgendaSummaryPage() {
                         <li key={s.type}>{s.type}</li>
                     ))}
             </ul>
-            {agenda.baseTemplate !== "notebook" && (
-                <a href={`/agendas/${agenda.id}/pages/date/${new Date().toISOString().slice(0, 10)}`} className="underline">
-                    Open today&apos;s page
-                </a>
-            )}
+            <Link
+                href={
+                    agenda.baseTemplate === "notebook"
+                        ? `/agendas/${agenda.id}/pages/number/1`
+                        : `/agendas/${agenda.id}/pages/date/${todayLocal()}`
+                }
+                className="underline"
+            >
+                {agenda.baseTemplate === "notebook" ? "Open page 1" : "Open today's page"}
+            </Link>
             <Link href="/" className="underline">Back to home</Link>
         </main>
     );

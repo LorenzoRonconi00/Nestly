@@ -4,13 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { FreetextSection } from "@/components/sections/FreetextSection";
-import { ExpensesSection } from "@/components/sections/ExpensesSection";
-import { ChecklistSection } from "@/components/sections/ChecklistSection";
-import { MoodSection } from "@/components/sections/MoodSection";
-import { AppointmentsSection } from "@/components/sections/AppointmentsSection";
+import { addDays } from "@/lib/date";
+import { PageSections, type Section } from "@/components/PageSections";
 
-type Section = { id: string; type: string; order: number; data: Record<string, unknown> };
 type PageData = { id: string; date: string | null; pageNumber: number | null; sections: Section[] };
 
 export default function DatePageView() {
@@ -49,41 +45,21 @@ export default function DatePageView() {
     return (
         <main className="flex min-h-screen flex-col items-center gap-6 py-12">
             <h1 className="text-2xl font-semibold">{page.date}</h1>
-            <div className="flex w-full max-w-md flex-col gap-4">
-                {page.sections
-                    .slice()
-                    .sort((a, b) => a.order - b.order)
-                    .map((section) => (
-                        <SectionRenderer
-                            key={section.id}
-                            section={section}
-                            onSave={(data) => saveSectionData(section.id, data)}
-                        />
-                    ))}
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={() => router.push(`/agendas/${params.id}/pages/date/${addDays(params.date, -1)}`)}
+                    className="rounded border px-3 py-1"
+                >
+                    ← Previous day
+                </button>
+                <button
+                    onClick={() => router.push(`/agendas/${params.id}/pages/date/${addDays(params.date, 1)}`)}
+                    className="rounded border px-3 py-1"
+                >
+                    Next day →
+                </button>
             </div>
+            <PageSections sections={page.sections} onSaveSection={saveSectionData} />
         </main>
     );
-}
-
-function SectionRenderer({
-    section,
-    onSave,
-}: {
-    section: Section;
-    onSave: (data: Record<string, unknown>) => void;
-}) {
-    switch (section.type) {
-        case "freetext":
-            return <FreetextSection initialData={section.data} onSave={onSave} />;
-        case "expenses":
-            return <ExpensesSection initialData={section.data} onSave={onSave} />;
-        case "checklist":
-            return <ChecklistSection initialData={section.data} onSave={onSave} />;
-        case "mood":
-            return <MoodSection initialData={section.data} onSave={onSave} />;
-        case "appointments":
-            return <AppointmentsSection initialData={section.data} onSave={onSave} />;
-        default:
-            return <p className="rounded border p-3 text-sm text-gray-500">Unknown section type: {section.type}</p>;
-    }
 }

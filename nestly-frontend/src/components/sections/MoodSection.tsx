@@ -6,7 +6,7 @@ import { useAutosave } from "@/lib/useAutosave";
 const MOODS = [1, 2, 3, 4, 5];
 type Props = { initialData: Record<string, unknown>; onSave: (data: Record<string, unknown>) => void };
 
-export function MoodSection({ initialData, onSave }: Props) {
+export function MoodSection({ initialData, onSave }: Readonly<Props>) {
     const [value, setValue] = useState<number>((initialData.value as number) ?? 3);
 
     useAutosave(value, (v) => onSave({ value: v }));
