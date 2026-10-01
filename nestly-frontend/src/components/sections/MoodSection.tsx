@@ -19,7 +19,7 @@ export function MoodSection({ initialData, onSave }: Readonly<Props>) {
                     <button
                         key={m}
                         onClick={() => setValue(m)}
-                        className={`h-8 w-8 rounded-full border ${value === m ? "bg-black text-white" : ""}`}
+                        className={`h-8 w-8 cursor-pointer rounded-full border ${value === m ? "bg-foreground text-background" : ""}`}
                     >
                         {m}
                     </button>

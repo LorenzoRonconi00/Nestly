@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { todayLocal } from "@/lib/date";
 
 type Agenda = {
@@ -16,21 +15,16 @@ type Agenda = {
 
 export default function AgendaSummaryPage() {
     const params = useParams<{ id: string }>();
-    const router = useRouter();
     const [agenda, setAgenda] = useState<Agenda | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = getToken();
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-        apiFetch(`/api/agendas/${params.id}`, { headers: { Authorization: `Bearer ${token}` } })
-            .then((res) => (res.ok ? res.json() : null))
+        authFetch(`/api/agendas/${params.id}`)
+            .catch(ignoreSessionExpired)
+            .then((res) => (res?.ok ? res.json() : null))
             .then(setAgenda)
             .finally(() => setLoading(false));
-    }, [params.id, router]);
+    }, [params.id]);
 
     if (loading) return null;
     if (!agenda) return <p className="p-8">Agenda not found</p>;

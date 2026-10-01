@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { authFetch, ignoreSessionExpired } from "@/lib/api";
 
 const SECTION_TYPES = [
     { value: "expenses", label: "Expenses" },
@@ -23,18 +22,14 @@ export default function StructurePage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const token = getToken();
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-        apiFetch(`/api/agendas/${params.id}`, { headers: { Authorization: `Bearer ${token}` } })
-            .then((res) => (res.ok ? res.json() : null))
+        authFetch(`/api/agendas/${params.id}`)
+            .catch(ignoreSessionExpired)
+            .then((res) => (res?.ok ? res.json() : null))
             .then((data) => {
                 if (data?.sections) setSections(data.sections);
             })
             .finally(() => setLoading(false));
-    }, [params.id, router]);
+    }, [params.id]);
 
     function addSection(type: string) {
         if (sections.some((s) => s.type === type)) return;
@@ -56,16 +51,11 @@ export default function StructurePage() {
 
     async function handleConfirm() {
         setError(null);
-        const token = getToken();
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-        const res = await apiFetch(`/api/agendas/${params.id}/structure-template`, {
+        const res = await authFetch(`/api/agendas/${params.id}/structure-template`, {
             method: "PATCH",
-            headers: { Authorization: `Bearer ${token}` },
             body: JSON.stringify({ sections }),
-        });
+        }).catch(ignoreSessionExpired);
+        if (!res) return;
         if (!res.ok) {
             setError("Could not save structure");
             return;

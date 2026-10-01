@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { authFetch, ignoreSessionExpired } from "@/lib/api";
 
 const TEMPLATES = [
     { value: "notebook", label: "Notebook" },
@@ -20,16 +19,11 @@ export default function NewAgendaPage() {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
-        const token = getToken();
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-        const res = await apiFetch("/api/agendas", {
+        const res = await authFetch("/api/agendas", {
             method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
             body: JSON.stringify({ name, baseTemplate }),
-        });
+        }).catch(ignoreSessionExpired);
+        if (!res) return;
         if (!res.ok) {
             setError("Could not create agenda");
             return;

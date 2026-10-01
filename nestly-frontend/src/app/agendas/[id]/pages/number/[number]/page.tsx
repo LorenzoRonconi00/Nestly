@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { PageSections, type Section } from "@/components/PageSections";
+import { patchSection } from "@/lib/sections";
 
 type PageData = { id: string; date: string | null; pageNumber: number | null; sections: Section[] };
 
@@ -15,27 +15,16 @@ export default function NumberPageView() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = getToken();
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-        apiFetch(`/api/agendas/${params.id}/pages/by-number/${params.number}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then((res) => (res.ok ? res.json() : null))
+        authFetch(`/api/agendas/${params.id}/pages/by-number/${params.number}`)
+            .catch(ignoreSessionExpired)
+            .then((res) => (res?.ok ? res.json() : null))
             .then(setPage)
             .finally(() => setLoading(false));
-    }, [params.id, params.number, router]);
+    }, [params.id, params.number]);
 
     async function saveSectionData(sectionId: string, data: Record<string, unknown>) {
-        const token = getToken();
-        if (!token || !page) return;
-        await apiFetch(`/api/agendas/${params.id}/pages/${page.id}/sections/${sectionId}`, {
-            method: "PATCH",
-            headers: { Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ data }),
-        });
+        if (!page) return;
+        await patchSection(params.id, page.id, sectionId, data);
     }
 
     if (loading) return null;

@@ -1,18 +1,32 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { setToken } from "@/lib/auth";
+import { flushDrafts } from "@/lib/drafts";
+
+function readReturnTo(): string {
+    const value = new URLSearchParams(window.location.search).get("returnTo");
+    const safe = value?.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\");
+    return safe ? value! : "/";
+}
 
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
-      async function handleSubmit(e: FormEvent) {
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get("reason") === "expired") {
+            setNotice("Your session expired. Log in to continue; unsaved changes will be restored.");
+        }
+    }, []);
+
+    async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setError(null);
         const res = await apiFetch("/api/auth/login", {
@@ -25,13 +39,15 @@ export default function LoginPage() {
         }
         const data = await res.json();
         setToken(data.token);
-        router.push("/");
+        await flushDrafts();
+        router.push(readReturnTo());
     }
 
     return (
         <main className="flex min-h-screen items-center justify-center">
             <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
                 <h1 className="text-2xl font-semibold">Login</h1>
+                {notice && <p className="text-gray-600">{notice}</p>}
                 {error && <p className="text-red-600">{error}</p>}
                 <input
                     type="email"
