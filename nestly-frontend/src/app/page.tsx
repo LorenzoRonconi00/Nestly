@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
-import { clearToken, getToken } from "@/lib/auth";
+import { authFetch, ignoreSessionExpired, logout } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 
 type Me = { userId: string; email: string };
 
@@ -17,14 +17,15 @@ export default function Home() {
       setLoading(false);
       return;
     }
-    apiFetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => (res.ok ? res.json() : null))
+    authFetch("/api/auth/me", {}, false)
+      .catch(ignoreSessionExpired)
+      .then((res) => (res?.ok ? res.json() : null))
       .then((data) => setMe(data))
       .finally(() => setLoading(false));
   }, []);
 
-  function handleLogout() {
-    clearToken();
+  async function handleLogout() {
+    await logout();
     setMe(null);
   }
 

@@ -14,3 +14,5 @@ nestly:
     jwt:
       secret: ${JWT_SECRET}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}
+    refresh-token:
+      cookie-secure: ${REFRESH_COOKIE_SECURE:true}
