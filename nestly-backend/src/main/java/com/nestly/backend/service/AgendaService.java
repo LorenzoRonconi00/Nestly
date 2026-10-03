@@ -1,15 +1,16 @@
 package com.nestly.backend.service;
 
-import com.nestly.backend.domain.Agenda;
-import com.nestly.backend.domain.BaseTemplate;
-import com.nestly.backend.domain.StructureTemplate;
-import com.nestly.backend.repository.AgendaRepository;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.UUID;
+import com.nestly.backend.domain.Agenda;
+import com.nestly.backend.domain.BaseTemplate;
+import com.nestly.backend.domain.StructureTemplate;
+import com.nestly.backend.repository.AgendaRepository;
 
 @Service
 public class AgendaService {
@@ -33,7 +34,7 @@ public class AgendaService {
     }
 
     public List<Agenda> listForUser(UUID userId) {
-        return agendaRepository.findAllByUserId(userId);
+        return agendaRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
     }
 
     public Agenda getForUser(UUID id, UUID userId) {
