@@ -74,6 +74,11 @@ public class RefreshTokenService {
                 .ifPresent(token -> repository.revokeFamily(token.getFamilyId(), Instant.now()));
     }
 
+    @Transactional
+    public int purgeExpired() {
+        return repository.deleteExpired(Instant.now());
+    }
+
     private String generate() {
         byte[] bytes = new byte[TOKEN_BYTES];
         secureRandom.nextBytes(bytes);

@@ -18,3 +18,4 @@ nestly:
   refresh-token:
     expiration-days: ${REFRESH_TOKEN_EXPIRATION_DAYS:30}
     cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+    cleanup-cron: "${REFRESH_TOKEN_CLEANUP_CRON:0 0 3 * * *}"
