@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.nestly.backend.domain.Agenda;
@@ -40,5 +41,12 @@ public class AgendaService {
     public Agenda getForUser(UUID id, UUID userId) {
         return agendaRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Agenda not found"));
+    }
+
+    @Transactional
+    public void delete(UUID id, UUID userId) {
+        if (agendaRepository.deleteByIdAndUserId(id, userId) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Agenda not found");
+        }
     }
 }

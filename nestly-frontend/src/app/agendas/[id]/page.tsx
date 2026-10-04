@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { todayLocal } from "@/lib/date";
 import { CoverViewer } from "@/components/cover/CoverViewer";
+import { DeleteAgendaPanel } from "@/components/DeleteAgendaPanel";
 import { parseCoverTheme } from "@/lib/coverTheme";
 
 type Agenda = {
@@ -18,8 +19,11 @@ type Agenda = {
 
 export default function AgendaSummaryPage() {
     const params = useParams<{ id: string }>();
+    const router = useRouter();
     const [agenda, setAgenda] = useState<Agenda | null>(null);
     const [loading, setLoading] = useState(true);
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         authFetch(`/api/agendas/${params.id}`)
@@ -28,6 +32,17 @@ export default function AgendaSummaryPage() {
             .then(setAgenda)
             .finally(() => setLoading(false));
     }, [params.id]);
+
+    async function handleDelete() {
+        setError(null);
+        const res = await authFetch(`/api/agendas/${params.id}`, { method: "DELETE" }).catch(ignoreSessionExpired);
+        if (!res) return;
+        if (!res.ok) {
+            setError("Could not delete agenda");
+            return;
+        }
+        router.push("/");
+    }
 
     if (loading) return null;
     if (!agenda) return <p className="p-8">Agenda not found</p>;
@@ -51,6 +66,21 @@ export default function AgendaSummaryPage() {
                 Edit structure
             </Link>
             <Link href="/" className="underline">Back to home</Link>
+            {error && <p className="text-red-600">{error}</p>}
+            {confirmingDelete ? (
+                <DeleteAgendaPanel
+                    agendaName={agenda.name}
+                    onConfirm={handleDelete}
+                    onCancel={() => setConfirmingDelete(false)}
+                />
+            ) : (
+                <button
+                    onClick={() => setConfirmingDelete(true)}
+                    className="cursor-pointer text-sm text-red-600 underline"
+                >
+                    Delete agenda
+                </button>
+            )}
         </main>
     );
 }

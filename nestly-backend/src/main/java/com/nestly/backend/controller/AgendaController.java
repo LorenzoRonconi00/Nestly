@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -55,6 +56,12 @@ public class AgendaController {
     @GetMapping("/{id}")
     public AgendaResponse get(@PathVariable UUID id) {
         return toResponse(agendaService.getForUser(id, CurrentUser.id()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        agendaService.delete(id, CurrentUser.id());
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/structure-template")
