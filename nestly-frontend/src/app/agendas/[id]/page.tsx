@@ -51,6 +51,9 @@ export default function AgendaSummaryPage() {
             >
                 {agenda.baseTemplate === "notebook" ? "Open page 1" : "Open today's page"}
             </Link>
+            <Link href={`/agendas/${agenda.id}/structure`} className="underline">
+                Edit structure
+            </Link>
             <Link href="/" className="underline">Back to home</Link>
         </main>
     );

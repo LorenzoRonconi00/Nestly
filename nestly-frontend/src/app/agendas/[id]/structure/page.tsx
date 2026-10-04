@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { authFetch, ignoreSessionExpired } from "@/lib/api";
 
@@ -13,6 +14,11 @@ const SECTION_TYPES = [
 ];
 
 type SectionItem = { type: string; order: number };
+type DataLoss = { type: string; pageCount: number };
+
+function labelFor(type: string) {
+    return SECTION_TYPES.find((t) => t.value === type)?.label ?? type;
+}
 
 export default function StructurePage() {
     const params = useParams<{ id: string }>();
@@ -20,6 +26,7 @@ export default function StructurePage() {
     const [sections, setSections] = useState<SectionItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pendingLoss, setPendingLoss] = useState<DataLoss[] | null>(null);
 
     useEffect(() => {
         authFetch(`/api/agendas/${params.id}`)
@@ -31,14 +38,19 @@ export default function StructurePage() {
             .finally(() => setLoading(false));
     }, [params.id]);
 
+    function changeSections(next: SectionItem[]) {
+        setSections(next);
+        setPendingLoss(null);
+    }
+
     function addSection(type: string) {
         if (sections.some((s) => s.type === type)) return;
-        setSections([...sections, { type, order: sections.length + 1 }]);
+        changeSections([...sections, { type, order: sections.length + 1 }]);
     }
 
     function removeSection(type: string) {
         const filtered = sections.filter((s) => s.type !== type);
-        setSections(filtered.map((s, i) => ({ ...s, order: i + 1 })));
+        changeSections(filtered.map((s, i) => ({ ...s, order: i + 1 })));
     }
 
     function moveSection(index: number, direction: -1 | 1) {
@@ -46,16 +58,21 @@ export default function StructurePage() {
         if (target < 0 || target >= sections.length) return;
         const reordered = [...sections];
         [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-        setSections(reordered.map((s, i) => ({ ...s, order: i + 1 })));
+        changeSections(reordered.map((s, i) => ({ ...s, order: i + 1 })));
     }
 
-    async function handleConfirm() {
+    async function save(confirmDataLoss: boolean) {
         setError(null);
         const res = await authFetch(`/api/agendas/${params.id}/structure-template`, {
             method: "PATCH",
-            body: JSON.stringify({ sections }),
+            body: JSON.stringify({ sections, confirmDataLoss }),
         }).catch(ignoreSessionExpired);
         if (!res) return;
+        if (res.status === 409) {
+            const body = await res.json();
+            setPendingLoss(body.sections);
+            return;
+        }
         if (!res.ok) {
             setError("Could not save structure");
             return;
@@ -93,7 +110,7 @@ export default function StructurePage() {
                 <ul className="flex flex-col gap-2">
                     {sections.map((s, i) => (
                         <li key={s.type} className="flex items-center justify-between rounded border px-3 py-2">
-                            <span>{SECTION_TYPES.find((t) => t.value === s.type)?.label ?? s.type}</span>
+                            <span>{labelFor(s.type)}</span>
                             <div className="flex gap-1">
                                 <button onClick={() => moveSection(i, -1)} disabled={i === 0}>↑</button>
                                 <button onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1}>↓</button>
@@ -104,13 +121,45 @@ export default function StructurePage() {
                 </ul>
             </div>
 
+            {pendingLoss && (
+                <div role="alert" className="flex w-full max-w-sm flex-col gap-2 rounded border border-red-300 p-3">
+                    <p className="text-sm font-medium">
+                        These sections contain data that will be permanently deleted:
+                    </p>
+                    <ul className="text-sm">
+                        {pendingLoss.map((loss) => (
+                            <li key={loss.type}>
+                                {labelFor(loss.type)}: {loss.pageCount} {loss.pageCount === 1 ? "page" : "pages"}
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => save(true)}
+                            className="cursor-pointer rounded bg-black px-3 py-1 text-white"
+                        >
+                            Delete and save
+                        </button>
+                        <button
+                            onClick={() => setPendingLoss(null)}
+                            className="cursor-pointer rounded border px-3 py-1"
+                        >
+                            Keep editing
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <button
-                onClick={handleConfirm}
+                onClick={() => save(false)}
                 disabled={sections.length === 0}
                 className="rounded bg-black px-3 py-2 text-white disabled:opacity-50"
             >
                 Confirm
             </button>
+            <Link href={`/agendas/${params.id}`} className="text-sm underline">
+                Back to agenda
+            </Link>
         </main>
     );
 }
