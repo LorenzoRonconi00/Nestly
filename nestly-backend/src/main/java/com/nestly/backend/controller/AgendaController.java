@@ -41,7 +41,7 @@ public class AgendaController {
 
     @PostMapping
     public ResponseEntity<AgendaResponse> create(@Valid @RequestBody CreateAgendaRequest request) {
-        Agenda agenda = agendaService.create(CurrentUser.id(), request.name(), request.baseTemplate());
+        Agenda agenda = agendaService.create(CurrentUser.id(), request.name(), request.baseTemplate(), request.coverTheme());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(agenda));
     }
 

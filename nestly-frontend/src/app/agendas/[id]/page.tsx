@@ -5,12 +5,15 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { todayLocal } from "@/lib/date";
+import { CoverViewer } from "@/components/cover/CoverViewer";
+import { parseCoverTheme } from "@/lib/coverTheme";
 
 type Agenda = {
     id: string;
     name: string;
     baseTemplate: string;
     sections: { type: string; order: number }[];
+    coverTheme: string | null;
 };
 
 export default function AgendaSummaryPage() {
@@ -33,14 +36,7 @@ export default function AgendaSummaryPage() {
         <main className="flex min-h-screen flex-col items-center justify-center gap-4">
             <h1 className="text-2xl font-semibold">{agenda.name}</h1>
             <p className="text-sm text-gray-500">Template: {agenda.baseTemplate}</p>
-            <ul className="flex flex-col gap-1">
-                {agenda.sections
-                    .slice()
-                    .sort((a, b) => a.order - b.order)
-                    .map((s) => (
-                        <li key={s.type}>{s.type}</li>
-                    ))}
-            </ul>
+            <CoverViewer theme={parseCoverTheme(agenda.coverTheme)} />
             <Link
                 href={
                     agenda.baseTemplate === "notebook"

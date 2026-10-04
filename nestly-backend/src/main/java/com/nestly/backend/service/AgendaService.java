@@ -21,9 +21,9 @@ public class AgendaService {
         this.agendaRepository = agendaRepository;
     }
 
-    public Agenda create(UUID userId, String name, String baseTemplateValue) {
+    public Agenda create(UUID userId, String name, String baseTemplateValue, String coverTheme) {
         BaseTemplate baseTemplate = BaseTemplate.fromValue(baseTemplateValue);
-        Agenda agenda = new Agenda(userId, name, baseTemplate, new StructureTemplate());
+        Agenda agenda = new Agenda(userId, name, baseTemplate, new StructureTemplate(), coverTheme);
         return agendaRepository.save(agenda);
     }
 

@@ -1,16 +1,17 @@
 package com.nestly.backend.domain;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "agendas")
@@ -42,11 +43,13 @@ public class Agenda {
     protected Agenda() {
     }
 
-    public Agenda(UUID userId, String name, BaseTemplate baseTemplate, StructureTemplate structureTemplate) {
+    public Agenda(UUID userId, String name, BaseTemplate baseTemplate, StructureTemplate structureTemplate,
+            String coverTheme) {
         this.userId = userId;
         this.name = name;
         this.baseTemplate = baseTemplate;
         this.structureTemplate = structureTemplate;
+        this.coverTheme = coverTheme;
         this.createdAt = Instant.now();
     }
 
