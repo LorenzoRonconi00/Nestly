@@ -1,9 +1,10 @@
 "use client";
 
+import { MoodSection } from "@/components/sections/MoodSection";
+import { SoundToggle } from "@/components/handwriting/SoundToggle";
 import { FreetextSection } from "@/components/sections/FreetextSection";
 import { ExpensesSection } from "@/components/sections/ExpensesSection";
 import { ChecklistSection } from "@/components/sections/ChecklistSection";
-import { MoodSection } from "@/components/sections/MoodSection";
 import { AppointmentsSection } from "@/components/sections/AppointmentsSection";
 
 export type Section = { id: string; type: string; order: number; data: Record<string, unknown> };
@@ -16,6 +17,7 @@ type Props = {
 export function PageSections({ sections, onSaveSection }: Props) {
     return (
         <div className="flex w-full max-w-md flex-col gap-4">
+            <SoundToggle />
             {sections
                 .slice()
                 .sort((a, b) => a.order - b.order)
