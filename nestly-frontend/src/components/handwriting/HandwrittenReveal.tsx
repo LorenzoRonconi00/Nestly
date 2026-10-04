@@ -32,9 +32,9 @@ export function RevealText({ text }: Readonly<{ text: string }>) {
 function PencilIcon() {
     return (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M3 21l1-5L16 4l4 4L8 20l-5 1z" fill="#f6d77a" stroke="#8a6d2b" strokeWidth="1.2" strokeLinejoin="round" />
-            <path d="M3 21l1-5 4 4-5 1z" fill="#f3dcc0" stroke="#8a6d2b" strokeWidth="1.2" strokeLinejoin="round" />
-            <path d="M16 4l2-2 4 4-2 2z" fill="#f2a4a4" stroke="#8a6d2b" strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M3 21l1-5L16 4l4 4L8 20l-5 1z" className="fill-pencil stroke-ink-soft" strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M3 21l1-5 4 4-5 1z" className="fill-wood stroke-ink-soft" strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M16 4l2-2 4 4-2 2z" className="fill-accent stroke-ink-soft" strokeWidth="1.2" strokeLinejoin="round" />
         </svg>
     );
 }

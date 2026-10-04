@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { PageSections, type Section } from "@/components/PageSections";
 import { patchSection } from "@/lib/sections";
+import { Button } from "@/components/ui/Button";
+import { TextLink } from "@/components/ui/TextLink";
 
 type PageData = { id: string; date: string | null; pageNumber: number | null; sections: Section[] };
 
@@ -33,22 +35,25 @@ export default function NumberPageView() {
     const currentNumber = Number(params.number);
 
     return (
-        <main className="flex min-h-screen flex-col items-center gap-6 py-12">
-            <h1 className="text-2xl font-semibold">Page {page.pageNumber}</h1>
-            <div className="flex items-center gap-4">
-                <button
+        <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-4 py-8">
+            <TextLink href={`/agendas/${params.id}`} className="text-sm">
+                ← Back to agenda
+            </TextLink>
+            <h1 className="font-hand text-3xl">Page {page.pageNumber}</h1>
+            <div className="flex items-center gap-3">
+                <Button
+                    variant="secondary"
                     onClick={() => router.push(`/agendas/${params.id}/pages/number/${Math.max(1, currentNumber - 1)}`)}
                     disabled={currentNumber <= 1}
-                    className="rounded border px-3 py-1 disabled:opacity-50"
                 >
                     ← Previous page
-                </button>
-                <button
+                </Button>
+                <Button
+                    variant="secondary"
                     onClick={() => router.push(`/agendas/${params.id}/pages/number/${currentNumber + 1}`)}
-                    className="rounded border px-3 py-1"
                 >
                     Next page →
-                </button>
+                </Button>
             </div>
             <PageSections sections={page.sections} onSaveSection={saveSectionData} />
         </main>

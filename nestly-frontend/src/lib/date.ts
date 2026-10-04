@@ -14,3 +14,12 @@ export function addDays(dateStr: string, delta: number): string {
 export function todayLocal(): string {
     return formatLocal(new Date());
 }
+
+export function formatDateLong(dateStr: string): string {
+    return new Intl.DateTimeFormat("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    }).format(new Date(`${dateStr}T00:00:00`));
+}

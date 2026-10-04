@@ -1,22 +1,57 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-paper: #fdf6ec;
+  --color-sheet: #fffbf3;
+  --color-ink: #4a3b36;
+  --color-ink-soft: #6f5d55;
+  --color-hand: #3f322e;
+  --color-accent: #f4b6a6;
+  --color-accent-hover: #efa08c;
+  --color-accent-soft: #fbe3da;
+  --color-line: #efe3d3;
+  --color-border: #e8d9c8;
+  --color-border-strong: #a08a78;
+  --color-danger: #a63d30;
+  --color-focus: #c8624a;
+  --color-pencil: #f7d794;
+  --color-wood: #f3dcc0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-patrick-hand), cursive;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root {
+  color-scheme: light;
+}
+
+@layer base {
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .written {
+    @apply font-hand text-xl leading-8 text-hand;
+  }
 }
 
 .reveal-active [data-reveal-word] {
@@ -26,4 +61,20 @@ body {
 
 .reveal-active [data-reveal-word][data-revealed] {
   opacity: 1;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px var(--color-sheet) inset;
+  transition: background-color 9999s ease-out;
+}
+
+.sheet-lines {
+  background-image: repeating-linear-gradient(to bottom,
+      transparent 0,
+      transparent 31px,
+      var(--color-line) 31px,
+      var(--color-line) 32px);
 }

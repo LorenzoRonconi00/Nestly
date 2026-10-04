@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAutosave } from "@/lib/useAutosave";
 import { RevealText } from "@/components/handwriting/HandwrittenReveal";
 import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
+import { Button } from "@/components/ui/Button";
+import { TextInput } from "@/components/ui/TextInput";
+import { useAutosave } from "@/lib/useAutosave";
 
 type ChecklistItem = { id: string; text: string; done: boolean };
 type Props = { initialData: Record<string, unknown>; onSave: (data: Record<string, unknown>) => void };
@@ -43,15 +45,16 @@ export function ChecklistSection({ initialData, onSave }: Readonly<Props>) {
             onEdit={() => setConfirmed(false)}
         >
             {confirmed ? (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col">
                     {items.map((item) => (
-                        <label key={item.id} className="flex items-center gap-2">
+                        <label key={item.id} className="written flex min-h-8 cursor-pointer items-start gap-3">
                             <input
                                 type="checkbox"
                                 checked={item.done}
                                 onChange={(e) => updateItem(item.id, { done: e.target.checked })}
+                                className="mt-2 h-4 w-4 accent-focus"
                             />
-                            <span className={item.done ? "text-gray-400 line-through" : ""}>
+                            <span className={item.done ? "text-ink-soft line-through" : ""}>
                                 <RevealText text={item.text} />
                             </span>
                         </label>
@@ -59,26 +62,32 @@ export function ChecklistSection({ initialData, onSave }: Readonly<Props>) {
                 </div>
             ) : (
                 <>
-                    <div className="flex flex-col gap-2">
-                        {items.map((item) => (
-                            <div key={item.id} className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={item.done}
-                                    onChange={(e) => updateItem(item.id, { done: e.target.checked })}
-                                />
-                                <input
-                                    value={item.text}
-                                    onChange={(e) => updateItem(item.id, { text: e.target.value })}
-                                    className="flex-1 rounded border px-2 py-1"
-                                />
-                                <button onClick={() => removeItem(item.id)}>✕</button>
-                            </div>
-                        ))}
+                    {items.map((item) => (
+                        <div key={item.id} className="flex h-8 items-center gap-2">
+                            <input
+                                type="checkbox"
+                                aria-label="Done"
+                                checked={item.done}
+                                onChange={(e) => updateItem(item.id, { done: e.target.checked })}
+                                className="h-4 w-4 accent-focus"
+                            />
+                            <TextInput
+                                compact
+                                aria-label="Item text"
+                                value={item.text}
+                                onChange={(e) => updateItem(item.id, { text: e.target.value })}
+                                className="min-w-0 flex-1"
+                            />
+                            <Button variant="dangerGhost" size="sm" aria-label="Remove item" onClick={() => removeItem(item.id)}>
+                                ✕
+                            </Button>
+                        </div>
+                    ))}
+                    <div className="flex h-8 items-center">
+                        <Button variant="secondary" size="sm" onClick={addItem}>
+                            + Add item
+                        </Button>
                     </div>
-                    <button onClick={addItem} className="mt-2 rounded border px-2 py-1 text-sm">
-                        + Add item
-                    </button>
                 </>
             )}
         </ConfirmableSection>

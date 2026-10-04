@@ -16,14 +16,20 @@ type Props = {
 
 export function PageSections({ sections, onSaveSection }: Props) {
     return (
-        <div className="flex w-full max-w-md flex-col gap-4">
+        <div className="flex w-full flex-col gap-2">
             <SoundToggle />
-            {sections
-                .slice()
-                .sort((a, b) => a.order - b.order)
-                .map((section) => (
-                    <SectionRenderer key={section.id} section={section} onSave={(data) => onSaveSection(section.id, data)} />
-                ))}
+            <div className="sheet-lines flex flex-col gap-8 rounded-2xl border border-border bg-sheet p-8 shadow-md">
+                {sections
+                    .slice()
+                    .sort((a, b) => a.order - b.order)
+                    .map((section) => (
+                        <SectionRenderer
+                            key={section.id}
+                            section={section}
+                            onSave={(data) => onSaveSection(section.id, data)}
+                        />
+                    ))}
+            </div>
         </div>
     );
 }
@@ -41,6 +47,6 @@ function SectionRenderer({ section, onSave }: { section: Section; onSave: (data:
         case "appointments":
             return <AppointmentsSection initialData={section.data} onSave={onSave} />;
         default:
-            return <p className="rounded border p-3 text-sm text-gray-500">Unknown section type: {section.type}</p>;
+            return <p className="rounded-xl border bg-paper p-3 text-sm text-ink-soft">Unknown section type: {section.type}</p>;
     }
 }

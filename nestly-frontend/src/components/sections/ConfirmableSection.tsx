@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { HandwrittenReveal } from "@/components/handwriting/HandwrittenReveal";
+import { Button } from "@/components/ui/Button";
 
 type Props = {
     title: string;
@@ -25,14 +26,14 @@ export function ConfirmableSection({ title, confirmed, onConfirm, onEdit, childr
     }
 
     return (
-        <div className="rounded border p-3">
-            <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-sm font-medium">{title}</h2>
-                <button onClick={handleToggle} className="cursor-pointer rounded border px-2 py-1 text-xs">
+        <section>
+            <div className="flex h-8 items-center justify-between">
+                <h2 className="text-xs font-bold tracking-wider text-ink-soft uppercase">{title}</h2>
+                <Button variant="secondary" size="sm" onClick={handleToggle}>
                     {confirmed ? "Edit" : "Confirm"}
-                </button>
+                </Button>
             </div>
             {confirmed ? <HandwrittenReveal animate={animate}>{children}</HandwrittenReveal> : children}
-        </div>
+        </section>
     );
 }

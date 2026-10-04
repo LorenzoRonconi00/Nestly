@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAutosave } from "@/lib/useAutosave";
 import { RevealText } from "@/components/handwriting/HandwrittenReveal";
 import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
+import { useAutosave } from "@/lib/useAutosave";
 
 type Props = {
     initialData: Record<string, unknown>;
@@ -25,7 +25,7 @@ export function FreetextSection({ initialData, onSave }: Readonly<Props>) {
             onEdit={() => setConfirmed(false)}
         >
             {confirmed ? (
-                <p className="whitespace-pre-wrap">
+                <p className="written whitespace-pre-wrap">
                     <RevealText text={text} />
                 </p>
             ) : (
@@ -33,7 +33,8 @@ export function FreetextSection({ initialData, onSave }: Readonly<Props>) {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     rows={4}
-                    className="w-full rounded border px-2 py-1"
+                    aria-label="Free text"
+                    className="written field-sizing-content w-full resize-none bg-transparent"
                 />
             )}
         </ConfirmableSection>

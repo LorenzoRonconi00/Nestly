@@ -8,6 +8,8 @@ import { todayLocal } from "@/lib/date";
 import { CoverViewer } from "@/components/cover/CoverViewer";
 import { DeleteAgendaPanel } from "@/components/DeleteAgendaPanel";
 import { parseCoverTheme } from "@/lib/coverTheme";
+import { Button, buttonClassName } from "@/components/ui/Button";
+import { TextLink } from "@/components/ui/TextLink";
 
 type Agenda = {
     id: string;
@@ -48,9 +50,13 @@ export default function AgendaSummaryPage() {
     if (!agenda) return <p className="p-8">Agenda not found</p>;
 
     return (
-        <main className="flex min-h-screen flex-col items-center justify-center gap-4">
-            <h1 className="text-2xl font-semibold">{agenda.name}</h1>
-            <p className="text-sm text-gray-500">Template: {agenda.baseTemplate}</p>
+        <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center gap-5 px-4 py-8">
+            <div className="flex flex-col items-center gap-2 text-center">
+                <h1 className="text-3xl font-extrabold">{agenda.name}</h1>
+                <span className="rounded-full border bg-sheet px-3 py-0.5 text-xs text-ink-soft">
+                    {agenda.baseTemplate}
+                </span>
+            </div>
             <CoverViewer theme={parseCoverTheme(agenda.coverTheme)} />
             <Link
                 href={
@@ -58,15 +64,19 @@ export default function AgendaSummaryPage() {
                         ? `/agendas/${agenda.id}/pages/number/1`
                         : `/agendas/${agenda.id}/pages/date/${todayLocal()}`
                 }
-                className="underline"
+                className={buttonClassName("primary")}
             >
                 {agenda.baseTemplate === "notebook" ? "Open page 1" : "Open today's page"}
             </Link>
-            <Link href={`/agendas/${agenda.id}/structure`} className="underline">
-                Edit structure
-            </Link>
-            <Link href="/" className="underline">Back to home</Link>
-            {error && <p className="text-red-600">{error}</p>}
+            <div className="flex items-center gap-4 text-sm">
+                <TextLink href={`/agendas/${agenda.id}/structure`}>Edit structure</TextLink>
+                <TextLink href="/">Back to home</TextLink>
+            </div>
+            {error && (
+                <p role="alert" className="text-sm text-danger">
+                    {error}
+                </p>
+            )}
             {confirmingDelete ? (
                 <DeleteAgendaPanel
                     agendaName={agenda.name}
@@ -74,12 +84,9 @@ export default function AgendaSummaryPage() {
                     onCancel={() => setConfirmingDelete(false)}
                 />
             ) : (
-                <button
-                    onClick={() => setConfirmingDelete(true)}
-                    className="cursor-pointer text-sm text-red-600 underline"
-                >
+                <Button variant="dangerGhost" size="sm" onClick={() => setConfirmingDelete(true)}>
                     Delete agenda
-                </button>
+                </Button>
             )}
         </main>
     );

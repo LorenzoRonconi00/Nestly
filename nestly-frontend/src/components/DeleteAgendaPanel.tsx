@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { TextInput } from "@/components/ui/TextInput";
 
 type Props = {
     agendaName: string;
@@ -13,28 +15,23 @@ export function DeleteAgendaPanel({ agendaName, onConfirm, onCancel }: Readonly<
     const matches = typed.trim() === agendaName.trim();
 
     return (
-        <div role="alert" className="flex w-full max-w-sm flex-col gap-2 rounded border border-red-300 p-3">
-            <p className="text-sm font-medium">
+        <div role="alert" className="flex w-full flex-col gap-3 rounded-2xl border border-danger bg-sheet p-4">
+            <p className="text-sm font-semibold">
                 This permanently deletes the agenda and all its pages. Type <strong>{agendaName}</strong> to
                 confirm.
             </p>
-            <input
+            <TextInput
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 aria-label="Agenda name confirmation"
-                className="rounded border px-2 py-1"
             />
             <div className="flex gap-2">
-                <button
-                    onClick={onConfirm}
-                    disabled={!matches}
-                    className="cursor-pointer rounded bg-black px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                <Button variant="danger" onClick={onConfirm} disabled={!matches}>
                     Delete forever
-                </button>
-                <button onClick={onCancel} className="cursor-pointer rounded border px-3 py-1">
+                </Button>
+                <Button variant="secondary" onClick={onCancel}>
                     Cancel
-                </button>
+                </Button>
             </div>
         </div>
     );

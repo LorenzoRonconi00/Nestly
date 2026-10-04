@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { isMuted, setMuted } from "@/lib/sound";
 
 export function SoundToggle() {
@@ -14,12 +15,8 @@ export function SoundToggle() {
     }
 
     return (
-        <button
-            onClick={toggle}
-            aria-pressed={muted}
-            className="cursor-pointer self-end rounded border px-2 py-1 text-xs"
-        >
+        <Button variant="ghost" size="sm" onClick={toggle} aria-pressed={muted} className="self-end">
             {muted ? "Sound: off" : "Sound: on"}
-        </button>
+        </Button>
     );
 }
