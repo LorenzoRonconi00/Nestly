@@ -1,69 +1,127 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PageSections } from "@/components/PageSections";
 import { SaveProblemBanner } from "@/components/SaveProblemBanner";
 import { SoundToggle } from "@/components/handwriting/SoundToggle";
 import { usePageReady } from "@/components/opening/OpeningProvider";
-import { PageFace } from "@/components/spread/PageFace";
-import { Spread } from "@/components/spread/Spread";
+import { BookStage } from "@/components/spread/BookStage";
 import { Button } from "@/components/ui/Button";
 import { TextLink } from "@/components/ui/TextLink";
 import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { parseCoverTheme } from "@/lib/coverTheme";
 import { addDays, formatDateLong, todayLocal } from "@/lib/date";
 import { fetchDateRange, fetchNumberRange, type PageData } from "@/lib/pages";
+import type { Direction, FlipState, SpreadData } from "@/lib/spread";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSectionSaver } from "@/lib/useSectionSaver";
 
 type AgendaInfo = { baseTemplate: string; coverTheme: string | null };
-type Loaded = { key: string; pages: PageData[] | null };
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const PREFETCH_DELAY_MS = 500;
 
 function pageTitle(page: PageData) {
     return page.date ? formatDateLong(page.date) : `Page ${page.pageNumber}`;
 }
 
-function faceSide(count: number, index: number) {
-    if (count === 1) return "single";
-    return index === 0 ? "left" : "right";
+function neighborStart(isNotebook: boolean, start: string, direction: Direction, step: number): string | null {
+    if (isNotebook) {
+        const current = Number(start);
+        if (direction === "prev" && current <= 1) return null;
+        const target = direction === "next" ? current + step : current - step;
+        return String(Math.max(1, target));
+    }
+    return addDays(start, direction === "next" ? step : -step);
 }
 
-function buildTargets(agendaId: string, isNotebook: boolean, dateStart: string, pageStart: number, step: number) {
-    const base = `/agendas/${agendaId}/book`;
-    if (!isNotebook) {
-        return {
-            previous: { href: `${base}?date=${addDays(dateStart, -step)}`, disabled: false },
-            next: { href: `${base}?date=${addDays(dateStart, step)}`, disabled: false },
-        };
-    }
-    return {
-        previous: { href: `${base}?page=${Math.max(1, pageStart - step)}`, disabled: pageStart <= 1 },
-        next: { href: `${base}?page=${pageStart + step}`, disabled: false },
-    };
+function hrefFor(agendaId: string, isNotebook: boolean, start: string) {
+    return `/agendas/${agendaId}/book?${isNotebook ? "page" : "date"}=${start}`;
 }
 
 export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const wide = useMediaQuery("(min-width: 768px)", true);
+    const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", false);
     const count = wide ? 2 : 1;
     const { save, problem } = useSectionSaver(agendaId);
     const [agenda, setAgenda] = useState<AgendaInfo | null | undefined>(undefined);
-    const [loaded, setLoaded] = useState<Loaded | null>(null);
+    const [displayed, setDisplayed] = useState<SpreadData | null | undefined>(undefined);
+    const [flip, setFlip] = useState<FlipState | null>(null);
+    const displayedRef = useRef<SpreadData | null | undefined>(undefined);
+    const flippingRef = useRef(false);
+    const cacheRef = useRef(new Map<string, Promise<SpreadData | null>>());
 
     const rawDate = searchParams.get("date");
     const dateStart = rawDate && DATE_PATTERN.test(rawDate) ? rawDate : todayLocal();
     const rawPage = Number(searchParams.get("page"));
     const pageStart = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
-
     const isNotebook = agenda?.baseTemplate === "notebook";
-    const key = `${isNotebook ? pageStart : dateStart}:${count}`;
-    const targets = agenda ? buildTargets(agendaId, isNotebook, dateStart, pageStart, count) : null;
+    const urlStart = isNotebook ? String(pageStart) : dateStart;
+    const urlKey = `${urlStart}:${count}`;
 
-    usePageReady(agenda === null || (agenda !== undefined && loaded !== null));
+    usePageReady(agenda === null || (agenda !== undefined && displayed !== undefined));
+
+    const show = useCallback((spread: SpreadData | null) => {
+        displayedRef.current = spread;
+        if (spread) cacheRef.current.delete(spread.key);
+        setDisplayed(spread);
+    }, []);
+
+    const loadSpread = useCallback(
+        (start: string): Promise<SpreadData | null> => {
+            const key = `${start}:${count}`;
+            const cached = cacheRef.current.get(key);
+            if (cached) return cached;
+            const request = (
+                isNotebook ? fetchNumberRange(agendaId, Number(start), count) : fetchDateRange(agendaId, start, count)
+            )
+                .then((pages) => (pages ? { key, start, pages } : null))
+                .catch(() => null)
+                .then((spread) => {
+                    if (!spread) cacheRef.current.delete(key);
+                    return spread;
+                });
+            cacheRef.current.set(key, request);
+            return request;
+        },
+        [agendaId, isNotebook, count],
+    );
+
+    const commit = useCallback(
+        (to: SpreadData) => {
+            flushSync(() => {
+                show(to);
+                setFlip(null);
+            });
+            flippingRef.current = false;
+            router.push(hrefFor(agendaId, isNotebook, to.start), { scroll: false });
+        },
+        [agendaId, isNotebook, router, show],
+    );
+
+    const go = useCallback(
+        async (direction: Direction) => {
+            const from = displayedRef.current;
+            if (!from || flippingRef.current) return;
+            const start = neighborStart(isNotebook, from.start, direction, count);
+            if (start === null) return;
+            flippingRef.current = true;
+            const to = await loadSpread(start);
+            if (!to) {
+                flippingRef.current = false;
+                return;
+            }
+            if (reducedMotion) {
+                commit(to);
+                return;
+            }
+            setFlip({ direction, to });
+        },
+        [commit, count, isNotebook, loadSpread, reducedMotion],
+    );
 
     useEffect(() => {
         authFetch(`/api/agendas/${agendaId}`)
@@ -73,38 +131,51 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
     }, [agendaId]);
 
     useEffect(() => {
-        if (!agenda) return;
+        if (!agenda || flippingRef.current) return;
+        if (displayedRef.current?.key === urlKey) return;
         let cancelled = false;
-        const request = isNotebook
-            ? fetchNumberRange(agendaId, pageStart, count)
-            : fetchDateRange(agendaId, dateStart, count);
-        request
-            .catch(ignoreSessionExpired)
-            .then((pages) => {
-                if (!cancelled) setLoaded({ key, pages: pages ?? null });
-            });
+        loadSpread(urlStart).then((spread) => {
+            if (!cancelled) show(spread);
+        });
         return () => {
             cancelled = true;
         };
-    }, [agenda, agendaId, isNotebook, dateStart, pageStart, count, key]);
+    }, [agenda, urlKey, urlStart, loadSpread, show]);
 
     useEffect(() => {
-        if (!targets) return;
+        if (!agenda || !displayed) return;
+        const timer = setTimeout(() => {
+            const keep = new Set<string>();
+            for (const direction of ["next", "prev"] as const) {
+                const start = neighborStart(isNotebook, displayed.start, direction, count);
+                if (start === null) continue;
+                keep.add(`${start}:${count}`);
+                void loadSpread(start);
+            }
+            for (const key of cacheRef.current.keys()) {
+                if (!keep.has(key)) cacheRef.current.delete(key);
+            }
+        }, PREFETCH_DELAY_MS);
+        return () => clearTimeout(timer);
+    }, [agenda, displayed, isNotebook, count, loadSpread]);
+
+    useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
             const target = event.target as HTMLElement | null;
-            const typing = target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+            const typing =
+                target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
             if (typing) return;
-            if (event.key === "ArrowLeft" && !targets.previous.disabled) router.push(targets.previous.href);
-            if (event.key === "ArrowRight" && !targets.next.disabled) router.push(targets.next.href);
+            if (event.key === "ArrowLeft") void go("prev");
+            if (event.key === "ArrowRight") void go("next");
         };
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
-    }, [targets?.previous.href, targets?.previous.disabled, targets?.next.href, targets?.next.disabled, router]);
+    }, [go]);
 
     if (agenda === null) return <p className="p-8">Agenda not found</p>;
-    if (!agenda || !loaded || !targets) return null;
+    if (!agenda || displayed === undefined) return null;
 
-    const pages = loaded.pages;
+    const canGoPrevious = !displayed || !isNotebook || Number(displayed.start) > 1;
 
     return (
         <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-4 py-8 md:max-w-5xl">
@@ -114,29 +185,25 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
                 </TextLink>
                 <SoundToggle />
             </div>
-            {pages ? (
-                <Spread coverColor={parseCoverTheme(agenda.coverTheme).color}>
-                    {pages.map((page, index) => (
-                        <PageFace key={page.id} title={pageTitle(page)} side={faceSide(pages.length, index)}>
-                            <PageSections
-                                sections={page.sections}
-                                onSaveSection={(sectionId, data) => save(page.id, sectionId, data)}
-                            />
-                        </PageFace>
-                    ))}
-                </Spread>
+            {displayed ? (
+                <BookStage
+                    coverColor={parseCoverTheme(agenda.coverTheme).color}
+                    displayed={displayed}
+                    flip={flip}
+                    titleFor={pageTitle}
+                    onSaveSection={save}
+                    onFlipDone={() => {
+                        if (flip) commit(flip.to);
+                    }}
+                />
             ) : (
                 <p className="text-ink-soft">Page not found</p>
             )}
             <div className="flex items-center justify-center gap-3">
-                <Button
-                    variant="secondary"
-                    disabled={targets.previous.disabled}
-                    onClick={() => router.push(targets.previous.href)}
-                >
+                <Button variant="secondary" disabled={!canGoPrevious} onClick={() => void go("prev")}>
                     ← Previous
                 </Button>
-                <Button variant="secondary" disabled={targets.next.disabled} onClick={() => router.push(targets.next.href)}>
+                <Button variant="secondary" onClick={() => void go("next")}>
                     Next →
                 </Button>
             </div>

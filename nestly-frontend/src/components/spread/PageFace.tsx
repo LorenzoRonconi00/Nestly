@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
-type Side = "left" | "right" | "single";
+export type Side = "left" | "right" | "single";
 
 const SIDE_CLASSES: Record<Side, string> = {
     left: "rounded-l-2xl",
@@ -14,13 +14,15 @@ const GUTTER_SHADOWS: Record<Side, string | null> = {
     single: null,
 };
 
-type Props = { title: string; side: Side; children: ReactNode };
+type Props = { title: string; side: Side; shadeRef?: Ref<HTMLDivElement>; children: ReactNode };
 
-export function PageFace({ title, side, children }: Readonly<Props>) {
+export function PageFace({ title, side, shadeRef, children }: Readonly<Props>) {
     const shadow = GUTTER_SHADOWS[side];
 
     return (
-        <article className={`sheet-lines relative flex min-h-[34rem] flex-col gap-8 bg-sheet p-8 ${SIDE_CLASSES[side]}`}>
+        <article
+            className={`sheet-lines relative flex h-full min-h-[34rem] flex-col gap-8 bg-sheet p-8 ${SIDE_CLASSES[side]}`}
+        >
             <h2 className="font-hand text-2xl leading-8">{title}</h2>
             {children}
             {shadow && (
@@ -28,6 +30,13 @@ export function PageFace({ title, side, children }: Readonly<Props>) {
                     aria-hidden="true"
                     className={`pointer-events-none absolute inset-y-0 w-10 ${side === "left" ? "right-0" : "left-0"}`}
                     style={{ backgroundImage: shadow }}
+                />
+            )}
+            {shadeRef && (
+                <div
+                    ref={shadeRef}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-[inherit] bg-ink opacity-0"
                 />
             )}
         </article>
