@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authFetch, ignoreSessionExpired, logout } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { useHasToken } from "@/lib/useHasToken";
 import { Button, buttonClassName } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
@@ -13,22 +13,17 @@ type AgendaSummary = { id: string; name: string; baseTemplate: string };
 
 export default function Home() {
 
-  const [me, setMe] = useState<Me | null>(null);
-  const [loading, setLoading] = useState(true);
+  const hasToken = useHasToken();
+  const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [agendas, setAgendas] = useState<AgendaSummary[] | null>(null);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!hasToken) return;
     authFetch("/api/auth/me", {}, false)
       .catch(ignoreSessionExpired)
       .then((res) => (res?.ok ? res.json() : null))
-      .then((data) => setMe(data))
-      .finally(() => setLoading(false));
-  }, []);
+      .then(setMe);
+  }, [hasToken]);
 
   useEffect(() => {
     if (!me) return;
@@ -43,6 +38,7 @@ export default function Home() {
     setMe(null);
   }
 
+  const loading = hasToken === null || (hasToken && me === undefined);
   if (loading) return null;
 
   return (

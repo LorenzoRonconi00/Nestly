@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { setToken } from "@/lib/auth";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextInput } from "@/components/ui/TextInput";
 import { TextLink } from "@/components/ui/TextLink";
+import { useQueryParam } from "@/lib/useQueryParam";
 
 function readReturnTo(): string {
     const value = new URLSearchParams(window.location.search).get("returnTo");
@@ -22,13 +23,10 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (new URLSearchParams(window.location.search).get("reason") === "expired") {
-            setNotice("Your session expired. Log in to continue; unsaved changes will be restored.");
-        }
-    }, []);
+    const notice =
+        useQueryParam("reason") === "expired"
+            ? "Your session expired. Log in to continue; unsaved changes will be restored."
+            : null;
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
