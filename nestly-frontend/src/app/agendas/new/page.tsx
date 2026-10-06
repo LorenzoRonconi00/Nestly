@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { CoverViewer } from "@/components/cover/CoverViewer";
-import { COVER_COLOR_PRESETS, DEFAULT_COVER_THEME, serializeCoverTheme } from "@/lib/coverTheme";
+import { CoverColorPicker } from "@/components/cover/CoverColorPicker";
+import { DEFAULT_COVER_THEME, serializeCoverTheme } from "@/lib/coverTheme";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextInput } from "@/components/ui/TextInput";
@@ -51,30 +52,7 @@ export default function NewAgendaPage() {
                         </p>
                     )}
                     <CoverViewer theme={coverTheme} className="h-56 w-full" />
-                    <fieldset className="flex flex-col gap-2">
-                        <legend className="mb-1 text-sm font-bold">Cover color</legend>
-                        <div className="flex flex-wrap items-center gap-2">
-                            {COVER_COLOR_PRESETS.map((color) => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    aria-label={`Cover color ${color}`}
-                                    aria-pressed={coverColor === color}
-                                    onClick={() => setCoverColor(color)}
-                                    style={{ backgroundColor: color }}
-                                    className={`h-8 w-8 cursor-pointer rounded-full border border-border-strong ${coverColor === color ? "ring-2 ring-ink ring-offset-2 ring-offset-sheet" : ""
-                                        }`}
-                                />
-                            ))}
-                            <input
-                                type="color"
-                                aria-label="Custom cover color"
-                                value={coverColor}
-                                onChange={(e) => setCoverColor(e.target.value)}
-                                className="h-8 w-8 cursor-pointer rounded-full"
-                            />
-                        </div>
-                    </fieldset>
+                    <CoverColorPicker value={coverColor} onChange={setCoverColor} />
                     <TextInput
                         type="text"
                         placeholder="Agenda name"

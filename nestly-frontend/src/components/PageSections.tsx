@@ -1,7 +1,6 @@
 "use client";
 
 import { MoodSection } from "@/components/sections/MoodSection";
-import { SoundToggle } from "@/components/handwriting/SoundToggle";
 import { FreetextSection } from "@/components/sections/FreetextSection";
 import { ExpensesSection } from "@/components/sections/ExpensesSection";
 import { ChecklistSection } from "@/components/sections/ChecklistSection";
@@ -16,20 +15,17 @@ type Props = {
 
 export function PageSections({ sections, onSaveSection }: Props) {
     return (
-        <div className="flex w-full flex-col gap-2">
-            <SoundToggle />
-            <div className="sheet-lines flex flex-col gap-8 rounded-2xl border border-border bg-sheet p-8 shadow-md">
-                {sections
-                    .slice()
-                    .sort((a, b) => a.order - b.order)
-                    .map((section) => (
-                        <SectionRenderer
-                            key={section.id}
-                            section={section}
-                            onSave={(data) => onSaveSection(section.id, data)}
-                        />
-                    ))}
-            </div>
+        <div className="flex flex-col gap-8">
+            {sections
+                .slice()
+                .sort((a, b) => a.order - b.order)
+                .map((section) => (
+                    <SectionRenderer
+                        key={section.id}
+                        section={section}
+                        onSave={(data) => onSaveSection(section.id, data)}
+                    />
+                ))}
         </div>
     );
 }

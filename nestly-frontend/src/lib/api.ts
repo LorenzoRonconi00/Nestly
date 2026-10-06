@@ -72,7 +72,7 @@ async function refreshAccessToken(staleToken: string | null): Promise<string | n
 function expireSession(redirect: boolean, expired: boolean): never {
     clearToken();
     if (redirect) {
-        const params = new URLSearchParams({ returnTo: window.location.pathname });
+        const params = new URLSearchParams({ returnTo: window.location.pathname + window.location.search });
         if (expired) params.set("reason", "expired");
         window.location.assign(`/login?${params}`);
     }

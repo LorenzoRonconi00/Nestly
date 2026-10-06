@@ -24,13 +24,20 @@ public class AgendaService {
 
     public Agenda create(UUID userId, String name, String baseTemplateValue, String coverTheme) {
         BaseTemplate baseTemplate = BaseTemplate.fromValue(baseTemplateValue);
-        Agenda agenda = new Agenda(userId, name, baseTemplate, new StructureTemplate(), coverTheme);
+        Agenda agenda = new Agenda(userId, name.trim(), baseTemplate, new StructureTemplate(), coverTheme);
         return agendaRepository.save(agenda);
     }
 
     public Agenda updateStructureTemplate(UUID id, UUID userId, StructureTemplate structureTemplate) {
         Agenda agenda = getForUser(id, userId);
         agenda.setStructureTemplate(structureTemplate);
+        return agendaRepository.save(agenda);
+    }
+
+    @Transactional
+    public Agenda updateDetails(UUID id, UUID userId, String name, String coverTheme) {
+        Agenda agenda = getForUser(id, userId);
+        agenda.updateDetails(name.trim(), coverTheme);
         return agendaRepository.save(agenda);
     }
 

@@ -57,6 +57,11 @@ public class Agenda {
         this.structureTemplate = structureTemplate;
     }
 
+    public void updateDetails(String name, String coverTheme) {
+        this.name = name;
+        this.coverTheme = coverTheme;
+    }
+
     public UUID getId() {
         return id;
     }

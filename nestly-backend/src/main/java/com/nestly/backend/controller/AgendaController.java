@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +22,7 @@ import com.nestly.backend.domain.Agenda;
 import com.nestly.backend.dto.AgendaResponse;
 import com.nestly.backend.dto.CreateAgendaRequest;
 import com.nestly.backend.dto.DataLossResponse;
+import com.nestly.backend.dto.UpdateAgendaRequest;
 import com.nestly.backend.dto.UpdateStructureTemplateRequest;
 import com.nestly.backend.service.AgendaService;
 import com.nestly.backend.service.DataLossConfirmationRequiredException;
@@ -56,6 +58,13 @@ public class AgendaController {
     @GetMapping("/{id}")
     public AgendaResponse get(@PathVariable UUID id) {
         return toResponse(agendaService.getForUser(id, CurrentUser.id()));
+    }
+
+    @PutMapping("/{id}")
+    public AgendaResponse updateDetails(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateAgendaRequest request) {
+        return toResponse(agendaService.updateDetails(id, CurrentUser.id(), request.name(), request.coverTheme()));
     }
 
     @DeleteMapping("/{id}")
