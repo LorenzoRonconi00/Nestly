@@ -1,6 +1,7 @@
 package com.nestly.backend.controller;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,6 +62,13 @@ public class PageController {
         return pageService.getOrCreateRangeByNumber(agendaId, CurrentUser.id(), from, count).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @GetMapping("/days-with-content")
+    public List<String> getDaysWithContent(
+            @PathVariable UUID agendaId,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+        return pageService.getDaysWithContent(agendaId, CurrentUser.id(), month);
     }
 
     @PatchMapping("/{pageId}/sections/{sectionId}")

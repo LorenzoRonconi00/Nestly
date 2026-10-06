@@ -1,6 +1,7 @@
 package com.nestly.backend.service;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,6 +81,11 @@ public class PageService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
         section.setData(data);
         return sectionRepository.save(section);
+    }
+
+    public List<String> getDaysWithContent(UUID agendaId, UUID userId, YearMonth month) {
+        Agenda agenda = dateAgenda(agendaId, userId);
+        return sectionRepository.findDaysWithContent(agenda.getId(), month.atDay(1), month.plusMonths(1).atDay(1));
     }
 
     private Agenda dateAgenda(UUID agendaId, UUID userId) {

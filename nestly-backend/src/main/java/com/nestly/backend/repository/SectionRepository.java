@@ -1,5 +1,6 @@
 package com.nestly.backend.repository;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -64,4 +65,19 @@ public interface SectionRepository extends JpaRepository<Section, UUID> {
             @Param("agendaId") UUID agendaId,
             @Param("type") String type,
             @Param("sectionOrder") int sectionOrder);
+
+    @Query(value = """
+        select distinct to_char(p.page_date, 'YYYY-MM-DD') as day
+        from pages p
+        join sections s on s.page_id = p.id
+        where p.agenda_id = :agendaId
+          and p.page_date >= :rangeStart
+          and p.page_date < :rangeEnd
+          and s.data <> cast('{}' as jsonb)
+        order by day
+        """, nativeQuery = true)
+    List<String> findDaysWithContent(
+            @Param("agendaId") UUID agendaId,
+            @Param("rangeStart") LocalDate rangeStart,
+            @Param("rangeEnd") LocalDate rangeEnd);
 }

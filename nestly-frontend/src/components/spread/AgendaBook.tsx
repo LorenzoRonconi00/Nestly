@@ -16,6 +16,8 @@ import { fetchDateRange, fetchNumberRange, type PageData } from "@/lib/pages";
 import type { Direction, FlipState, SpreadData } from "@/lib/spread";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSectionSaver } from "@/lib/useSectionSaver";
+import { CalendarMenu } from "@/components/spread/CalendarMenu";
+import { PageJumpMenu } from "@/components/spread/PageJumpMenu";
 
 type AgendaInfo = { baseTemplate: string; coverTheme: string | null };
 
@@ -102,12 +104,10 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
         [agendaId, isNotebook, router, show],
     );
 
-    const go = useCallback(
-        async (direction: Direction) => {
+    const flipTo = useCallback(
+        async (direction: Direction, start: string) => {
             const from = displayedRef.current;
-            if (!from || flippingRef.current) return;
-            const start = neighborStart(isNotebook, from.start, direction, count);
-            if (start === null) return;
+            if (!from || flippingRef.current || start === from.start) return;
             flippingRef.current = true;
             const to = await loadSpread(start);
             if (!to) {
@@ -120,7 +120,27 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
             }
             setFlip({ direction, to });
         },
-        [commit, count, isNotebook, loadSpread, reducedMotion],
+        [commit, loadSpread, reducedMotion],
+    );
+
+    const go = useCallback(
+        (direction: Direction) => {
+            const from = displayedRef.current;
+            if (!from) return;
+            const start = neighborStart(isNotebook, from.start, direction, count);
+            if (start !== null) void flipTo(direction, start);
+        },
+        [count, flipTo, isNotebook],
+    );
+
+    const jumpTo = useCallback(
+        (start: string) => {
+            const from = displayedRef.current;
+            if (!from) return;
+            const forward = isNotebook ? Number(start) > Number(from.start) : start > from.start;
+            void flipTo(forward ? "next" : "prev", start);
+        },
+        [flipTo, isNotebook],
     );
 
     useEffect(() => {
@@ -165,8 +185,8 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
             const typing =
                 target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
             if (typing) return;
-            if (event.key === "ArrowLeft") void go("prev");
-            if (event.key === "ArrowRight") void go("next");
+            if (event.key === "ArrowLeft") go("prev");
+            if (event.key === "ArrowRight") go("next");
         };
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
@@ -199,11 +219,21 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
             ) : (
                 <p className="text-ink-soft">Page not found</p>
             )}
-            <div className="flex items-center justify-center gap-3">
-                <Button variant="secondary" disabled={!canGoPrevious} onClick={() => void go("prev")}>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button variant="secondary" disabled={!canGoPrevious} onClick={() => go("prev")}>
                     ← Previous
                 </Button>
-                <Button variant="secondary" onClick={() => void go("next")}>
+                {isNotebook ? (
+                    <PageJumpMenu onJump={jumpTo} />
+                ) : (
+                    <>
+                        <CalendarMenu agendaId={agendaId} selected={displayed?.start ?? dateStart} onSelect={jumpTo} />
+                        <Button variant="ghost" onClick={() => jumpTo(todayLocal())}>
+                            Today
+                        </Button>
+                    </>
+                )}
+                <Button variant="secondary" onClick={() => go("next")}>
                     Next →
                 </Button>
             </div>

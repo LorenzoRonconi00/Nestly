@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { authFetch, ignoreSessionExpired } from "@/lib/api";
+import { StructurePreview } from "@/components/structure/StructurePreview";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextLink } from "@/components/ui/TextLink";
+import { authFetch, ignoreSessionExpired } from "@/lib/api";
+import { DEFAULT_COVER_THEME, parseCoverTheme } from "@/lib/coverTheme";
 
 const SECTION_TYPES = [
     { value: "expenses", label: "Expenses" },
@@ -26,6 +28,7 @@ export default function StructurePage() {
     const params = useParams<{ id: string }>();
     const router = useRouter();
     const [sections, setSections] = useState<SectionItem[]>([]);
+    const [coverColor, setCoverColor] = useState(DEFAULT_COVER_THEME.color);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [pendingLoss, setPendingLoss] = useState<DataLoss[] | null>(null);
@@ -36,6 +39,7 @@ export default function StructurePage() {
             .then((res) => (res?.ok ? res.json() : null))
             .then((data) => {
                 if (data?.sections) setSections(data.sections);
+                if (data) setCoverColor(parseCoverTheme(data.coverTheme).color);
             })
             .finally(() => setLoading(false));
     }, [params.id]);
@@ -87,104 +91,111 @@ export default function StructurePage() {
     const activeTypes = new Set(sections.map((s) => s.type));
 
     return (
-        <main className="flex min-h-screen items-center justify-center px-4 py-8">
-            <Card className="flex w-full max-w-sm flex-col gap-5">
-                <h1 className="text-2xl font-bold">Page structure</h1>
-                {error && (
-                    <p role="alert" className="text-sm text-danger">
-                        {error}
-                    </p>
-                )}
-
-                <div className="flex flex-col gap-2">
-                    <h2 className="text-sm font-bold">Available sections</h2>
-                    <div className="flex flex-wrap gap-2">
-                        {SECTION_TYPES.filter((t) => !activeTypes.has(t.value)).map((t) => (
-                            <Button key={t.value} variant="secondary" size="sm" onClick={() => addSection(t.value)}>
-                                + {t.label}
-                            </Button>
-                        ))}
-                        {activeTypes.size === SECTION_TYPES.length && (
-                            <p className="text-sm text-ink-soft">All sections are in use</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <h2 className="text-sm font-bold">Active sections</h2>
-                    {sections.length === 0 && <p className="text-sm text-ink-soft">No sections yet</p>}
-                    <ul className="flex flex-col gap-2">
-                        {sections.map((s, i) => (
-                            <li
-                                key={s.type}
-                                className="flex items-center justify-between rounded-xl border bg-paper px-3 py-2"
-                            >
-                                <span className="font-semibold">{labelFor(s.type)}</span>
-                                <div className="flex gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        aria-label={`Move ${labelFor(s.type)} up`}
-                                        onClick={() => moveSection(i, -1)}
-                                        disabled={i === 0}
-                                    >
-                                        ↑
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        aria-label={`Move ${labelFor(s.type)} down`}
-                                        onClick={() => moveSection(i, 1)}
-                                        disabled={i === sections.length - 1}
-                                    >
-                                        ↓
-                                    </Button>
-                                    <Button
-                                        variant="dangerGhost"
-                                        size="sm"
-                                        aria-label={`Remove ${labelFor(s.type)}`}
-                                        onClick={() => removeSection(s.type)}
-                                    >
-                                        ✕
-                                    </Button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-                {pendingLoss && (
-                    <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-danger bg-sheet p-4">
-                        <p className="text-sm font-semibold">
-                            These sections contain data that will be permanently deleted:
+        <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-8">
+            <h1 className="text-2xl font-bold">Page structure</h1>
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card className="flex flex-col gap-5 self-start">
+                    {error && (
+                        <p role="alert" className="text-sm text-danger">
+                            {error}
                         </p>
-                        <ul className="text-sm">
-                            {pendingLoss.map((loss) => (
-                                <li key={loss.type}>
-                                    {labelFor(loss.type)}: {loss.pageCount} {loss.pageCount === 1 ? "page" : "pages"}
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                        <h2 className="text-sm font-bold">Available sections</h2>
+                        <div className="flex flex-wrap gap-2">
+                            {SECTION_TYPES.filter((t) => !activeTypes.has(t.value)).map((t) => (
+                                <Button key={t.value} variant="secondary" size="sm" onClick={() => addSection(t.value)}>
+                                    + {t.label}
+                                </Button>
+                            ))}
+                            {activeTypes.size === SECTION_TYPES.length && (
+                                <p className="text-sm text-ink-soft">All sections are in use</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <h2 className="text-sm font-bold">Active sections</h2>
+                        {sections.length === 0 && <p className="text-sm text-ink-soft">No sections yet</p>}
+                        <ul className="flex flex-col gap-2">
+                            {sections.map((s, i) => (
+                                <li
+                                    key={s.type}
+                                    className="flex items-center justify-between rounded-xl border bg-paper px-3 py-2"
+                                >
+                                    <span className="font-semibold">{labelFor(s.type)}</span>
+                                    <div className="flex gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            aria-label={`Move ${labelFor(s.type)} up`}
+                                            onClick={() => moveSection(i, -1)}
+                                            disabled={i === 0}
+                                        >
+                                            ↑
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            aria-label={`Move ${labelFor(s.type)} down`}
+                                            onClick={() => moveSection(i, 1)}
+                                            disabled={i === sections.length - 1}
+                                        >
+                                            ↓
+                                        </Button>
+                                        <Button
+                                            variant="dangerGhost"
+                                            size="sm"
+                                            aria-label={`Remove ${labelFor(s.type)}`}
+                                            onClick={() => removeSection(s.type)}
+                                        >
+                                            ✕
+                                        </Button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
-                        <div className="flex gap-2">
-                            <Button variant="danger" onClick={() => save(true)}>
-                                Delete and save
-                            </Button>
-                            <Button variant="secondary" onClick={() => setPendingLoss(null)}>
-                                Keep editing
-                            </Button>
-                        </div>
                     </div>
-                )}
 
-                <div className="flex items-center gap-4">
-                    <Button onClick={() => save(false)} disabled={sections.length === 0}>
-                        Confirm
-                    </Button>
-                    <TextLink href={`/agendas/${params.id}`} className="text-sm">
-                        Back to agenda
-                    </TextLink>
-                </div>
-            </Card>
+                    {pendingLoss && (
+                        <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-danger bg-sheet p-4">
+                            <p className="text-sm font-semibold">
+                                These sections contain data that will be permanently deleted:
+                            </p>
+                            <ul className="text-sm">
+                                {pendingLoss.map((loss) => (
+                                    <li key={loss.type}>
+                                        {labelFor(loss.type)}: {loss.pageCount} {loss.pageCount === 1 ? "page" : "pages"}
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="flex gap-2">
+                                <Button variant="danger" onClick={() => save(true)}>
+                                    Delete and save
+                                </Button>
+                                <Button variant="secondary" onClick={() => setPendingLoss(null)}>
+                                    Keep editing
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                        <Button onClick={() => save(false)} disabled={sections.length === 0}>
+                            Confirm
+                        </Button>
+                        <TextLink href={`/agendas/${params.id}`} className="text-sm">
+                            Back to agenda
+                        </TextLink>
+                    </div>
+                </Card>
+
+                <section aria-label="Preview" className="flex flex-col gap-2 md:sticky md:top-8 md:self-start">
+                    <h2 className="text-sm font-bold">Preview</h2>
+                    <StructurePreview sections={sections} coverColor={coverColor} />
+                </section>
+            </div>
         </main>
     );
 }
