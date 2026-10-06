@@ -20,6 +20,7 @@ import com.nestly.backend.domain.Section;
 import com.nestly.backend.domain.SectionType;
 import com.nestly.backend.repository.PageRepository;
 import com.nestly.backend.repository.SectionRepository;
+import com.nestly.backend.search.SearchOutboxService;
 
 @Service
 public class PageService {
@@ -29,12 +30,14 @@ public class PageService {
     private final PageRepository pageRepository;
     private final SectionRepository sectionRepository;
     private final AgendaService agendaService;
+    private final SearchOutboxService searchOutbox;
 
     public PageService(PageRepository pageRepository, SectionRepository sectionRepository,
-            AgendaService agendaService) {
+            AgendaService agendaService, SearchOutboxService searchOutbox) {
         this.pageRepository = pageRepository;
         this.sectionRepository = sectionRepository;
         this.agendaService = agendaService;
+        this.searchOutbox = searchOutbox;
     }
 
     @Transactional
@@ -72,6 +75,7 @@ public class PageService {
         return sectionRepository.findAllByPageIdOrderByOrderAsc(pageId);
     }
 
+    @Transactional
     public Section updateSectionData(UUID agendaId, UUID pageId, UUID sectionId, UUID userId,
             Map<String, Object> data) {
         Agenda agenda = agendaService.getForUser(agendaId, userId);
@@ -79,8 +83,10 @@ public class PageService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found"));
         Section section = sectionRepository.findByIdAndPageId(sectionId, page.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
-        section.setData(data);
-        return sectionRepository.save(section);
+                section.setData(data);
+        Section saved = sectionRepository.save(section);
+        searchOutbox.pageChanged(page.getId());
+        return saved;
     }
 
     public List<String> getDaysWithContent(UUID agendaId, UUID userId, YearMonth month) {

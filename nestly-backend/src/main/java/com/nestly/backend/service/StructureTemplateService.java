@@ -14,15 +14,18 @@ import com.nestly.backend.domain.Agenda;
 import com.nestly.backend.domain.StructureTemplate;
 import com.nestly.backend.repository.SectionDataCount;
 import com.nestly.backend.repository.SectionRepository;
+import com.nestly.backend.search.SearchOutboxService;
 
 @Service
 public class StructureTemplateService {
 
     private final AgendaService agendaService;
+    private final SearchOutboxService searchOutbox;
     private final SectionRepository sectionRepository;
 
-    public StructureTemplateService(AgendaService agendaService, SectionRepository sectionRepository) {
+    public StructureTemplateService(AgendaService agendaService, SearchOutboxService searchOutbox, SectionRepository sectionRepository) {
         this.agendaService = agendaService;
+        this.searchOutbox = searchOutbox;
         this.sectionRepository = sectionRepository;
     }
 
@@ -50,6 +53,7 @@ public class StructureTemplateService {
             sectionRepository.updateOrder(agenda.getId(), type, order);
             sectionRepository.insertMissing(agenda.getId(), type, order);
         }
+        searchOutbox.agendaChanged(agenda.getId());
         return agendaService.updateStructureTemplate(agenda.getId(), userId, buildTemplate(orderedTypes));
     }
 

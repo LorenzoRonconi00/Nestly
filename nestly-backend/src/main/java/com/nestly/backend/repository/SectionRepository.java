@@ -80,4 +80,6 @@ public interface SectionRepository extends JpaRepository<Section, UUID> {
             @Param("agendaId") UUID agendaId,
             @Param("rangeStart") LocalDate rangeStart,
             @Param("rangeEnd") LocalDate rangeEnd);
+
+    List<Section> findAllByPageIdIn(Collection<UUID> pageIds);
 }

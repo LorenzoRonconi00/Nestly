@@ -14,5 +14,8 @@ nestly:
     jwt:
       secret: ${JWT_SECRET}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}
+    search:
+      url: ${MEILISEARCH_URL}
+      api-key: ${MEILISEARCH_API_KEY}
     refresh-token:
       cookie-secure: ${REFRESH_COOKIE_SECURE:true}

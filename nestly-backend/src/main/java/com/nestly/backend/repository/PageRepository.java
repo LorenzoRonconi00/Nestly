@@ -1,9 +1,11 @@
 package com.nestly.backend.repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -34,4 +36,10 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
             on conflict do nothing
             """, nativeQuery = true)
     int insertNumberPageIfAbsent(@Param("agendaId") UUID agendaId, @Param("pageNumber") int pageNumber);
+
+    @Query("select p.id from Page p where p.agendaId = :agendaId")
+    List<UUID> findIdsByAgendaId(@Param("agendaId") UUID agendaId);
+
+    @Query("select p.id from Page p order by p.id")
+    List<UUID> findAllIds(Pageable pageable);
 }

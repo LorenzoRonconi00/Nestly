@@ -1,0 +1,6 @@
+CREATE TABLE search_outbox (
+    id BIGSERIAL PRIMARY KEY,
+    kind VARCHAR(20) NOT NULL CHECK (kind IN ('UPSERT_PAGE', 'UPSERT_AGENDA', 'DELETE_AGENDA')),
+    ref_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

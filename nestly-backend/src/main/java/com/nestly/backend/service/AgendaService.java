@@ -12,14 +12,17 @@ import com.nestly.backend.domain.Agenda;
 import com.nestly.backend.domain.BaseTemplate;
 import com.nestly.backend.domain.StructureTemplate;
 import com.nestly.backend.repository.AgendaRepository;
+import com.nestly.backend.search.SearchOutboxService;
 
 @Service
 public class AgendaService {
 
     private final AgendaRepository agendaRepository;
+    private final SearchOutboxService searchOutbox;
 
-    public AgendaService(AgendaRepository agendaRepository) {
+    public AgendaService(AgendaRepository agendaRepository, SearchOutboxService searchOutbox) {
         this.agendaRepository = agendaRepository;
+        this.searchOutbox = searchOutbox;
     }
 
     public Agenda create(UUID userId, String name, String baseTemplateValue, String coverTheme) {
@@ -55,5 +58,6 @@ public class AgendaService {
         if (agendaRepository.deleteByIdAndUserId(id, userId) == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Agenda not found");
         }
+        searchOutbox.agendaDeleted(id);
     }
 }
