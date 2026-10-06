@@ -18,6 +18,8 @@ import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSectionSaver } from "@/lib/useSectionSaver";
 import { CalendarMenu } from "@/components/spread/CalendarMenu";
 import { PageJumpMenu } from "@/components/spread/PageJumpMenu";
+import { SearchMenu } from "@/components/spread/SearchMenu";
+import type { SearchHit } from "@/lib/search";
 
 type AgendaInfo = { baseTemplate: string; coverTheme: string | null };
 
@@ -143,6 +145,15 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
         [flipTo, isNotebook],
     );
 
+    const jumpToHit = useCallback(
+        (hit: SearchHit) => {
+            const start = hit.date ?? (hit.pageNumber === null ? null : String(hit.pageNumber));
+            if (start) jumpTo(start);
+        },
+        [jumpTo],
+    );
+
+
     useEffect(() => {
         authFetch(`/api/agendas/${agendaId}`)
             .catch(ignoreSessionExpired)
@@ -233,6 +244,7 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
                         </Button>
                     </>
                 )}
+                <SearchMenu agendaId={agendaId} onSelect={jumpToHit} />
                 <Button variant="secondary" onClick={() => go("next")}>
                     Next →
                 </Button>

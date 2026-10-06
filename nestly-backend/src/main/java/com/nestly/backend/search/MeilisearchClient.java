@@ -17,6 +17,12 @@ import org.springframework.web.client.RestClient;
 @Component
 public class MeilisearchClient {
 
+    public static final String HIGHLIGHT_START = "\uE000";
+    public static final String HIGHLIGHT_END = "\uE001";
+    public static final List<String> SEARCHABLE_SECTIONS = List.of("freetext", "checklist", "appointments", "expenses");
+
+    private static final int CROP_LENGTH_WORDS = 18;
+
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(2);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration TASK_POLL_INTERVAL = Duration.ofMillis(100);
@@ -61,7 +67,7 @@ public class MeilisearchClient {
     public void configureIndex() {
         Map<String, Object> task = http.patch().uri("/indexes/{uid}/settings", indexUid)
                 .body(Map.of(
-                        "searchableAttributes", List.of("freetext", "checklist", "appointments", "expenses"),
+                        "searchableAttributes", SEARCHABLE_SECTIONS,
                         "filterableAttributes", List.of("agendaId", "userId"),
                         "pagination", Map.of("maxTotalHits", 200)))
                 .retrieve().body(new ParameterizedTypeReference<>() {
@@ -102,7 +108,15 @@ public class MeilisearchClient {
 
     public List<Map<String, Object>> search(String query, String filter, int limit) {
         Map<String, Object> response = http.post().uri("/indexes/{uid}/search", indexUid)
-                .body(Map.of("q", query, "filter", filter, "limit", limit))
+                .body(Map.of(
+                        "q", query,
+                        "filter", filter,
+                        "limit", limit,
+                        "attributesToHighlight", SEARCHABLE_SECTIONS,
+                        "attributesToCrop", SEARCHABLE_SECTIONS,
+                        "cropLength", CROP_LENGTH_WORDS,
+                        "highlightPreTag", HIGHLIGHT_START,
+                        "highlightPostTag", HIGHLIGHT_END))
                 .retrieve().body(new ParameterizedTypeReference<>() {
                 });
         @SuppressWarnings("unchecked")
