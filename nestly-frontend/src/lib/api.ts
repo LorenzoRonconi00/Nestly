@@ -1,4 +1,5 @@
 import { clearToken, getToken, setToken } from "./auth";
+import { redirectTo } from "./navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 const REFRESH_LOCK_NAME = "nestly-token-refresh";
@@ -74,7 +75,7 @@ function expireSession(redirect: boolean, expired: boolean): never {
     if (redirect) {
         const params = new URLSearchParams({ returnTo: window.location.pathname + window.location.search });
         if (expired) params.set("reason", "expired");
-        window.location.assign(`/login?${params}`);
+        redirectTo(`/login?${params}`);
     }
     throw new SessionExpiredError();
 }
