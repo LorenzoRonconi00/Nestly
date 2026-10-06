@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { todayLocal } from "@/lib/date";
 import { CoverViewer } from "@/components/cover/CoverViewer";
+import type { CoverTimeline } from "@/components/cover/Cover3D";
 import { DeleteAgendaPanel } from "@/components/DeleteAgendaPanel";
-import { parseCoverTheme } from "@/lib/coverTheme";
+import { useOpening } from "@/components/opening/OpeningProvider";
 import { Button, buttonClassName } from "@/components/ui/Button";
 import { TextLink } from "@/components/ui/TextLink";
+import { parseCoverTheme } from "@/lib/coverTheme";
 
 type Agenda = {
     id: string;
@@ -22,6 +24,9 @@ type Agenda = {
 export default function AgendaSummaryPage() {
     const params = useParams<{ id: string }>();
     const router = useRouter();
+    const { startOpening } = useOpening();
+    const timelineRef = useRef<CoverTimeline | null>(null);
+    const coverBoxRef = useRef<HTMLDivElement>(null);
     const [agenda, setAgenda] = useState<Agenda | null>(null);
     const [loading, setLoading] = useState(true);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -46,8 +51,29 @@ export default function AgendaSummaryPage() {
         router.push("/");
     }
 
+    function handleOpenClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
+        const timeline = timelineRef.current;
+        const box = coverBoxRef.current;
+        const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!timeline || !box || modified || reducedMotion) return;
+
+        event.preventDefault();
+        const rect = box.getBoundingClientRect();
+        void startOpening({
+            coverTimeline: timeline,
+            href,
+            origin: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+        });
+    }
+
     if (loading) return null;
     if (!agenda) return <p className="p-8">Agenda not found</p>;
+
+    const openHref =
+        agenda.baseTemplate === "notebook"
+            ? `/agendas/${agenda.id}/pages/number/1`
+            : `/agendas/${agenda.id}/pages/date/${todayLocal()}`;
 
     return (
         <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center gap-5 px-4 py-8">
@@ -57,13 +83,17 @@ export default function AgendaSummaryPage() {
                     {agenda.baseTemplate}
                 </span>
             </div>
-            <CoverViewer theme={parseCoverTheme(agenda.coverTheme)} />
+            <div ref={coverBoxRef} className="w-full">
+                <CoverViewer
+                    theme={parseCoverTheme(agenda.coverTheme)}
+                    onAnimationReady={(timeline) => {
+                        timelineRef.current = timeline;
+                    }}
+                />
+            </div>
             <Link
-                href={
-                    agenda.baseTemplate === "notebook"
-                        ? `/agendas/${agenda.id}/pages/number/1`
-                        : `/agendas/${agenda.id}/pages/date/${todayLocal()}`
-                }
+                href={openHref}
+                onClick={(event) => handleOpenClick(event, openHref)}
                 className={buttonClassName("primary")}
             >
                 {agenda.baseTemplate === "notebook" ? "Open page 1" : "Open today's page"}

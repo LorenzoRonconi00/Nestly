@@ -8,6 +8,7 @@ import { PageSections, type Section } from "@/components/PageSections";
 import { patchSection } from "@/lib/sections";
 import { Button } from "@/components/ui/Button";
 import { TextLink } from "@/components/ui/TextLink";
+import { usePageReady } from "@/components/opening/OpeningProvider";
 
 type PageData = { id: string; date: string | null; pageNumber: number | null; sections: Section[] };
 
@@ -16,6 +17,8 @@ export default function DatePageView() {
     const router = useRouter();
     const [page, setPage] = useState<PageData | null>(null);
     const [loading, setLoading] = useState(true);
+
+    usePageReady(!loading);
 
     useEffect(() => {
         authFetch(`/api/agendas/${params.id}/pages/by-date/${params.date}`)
