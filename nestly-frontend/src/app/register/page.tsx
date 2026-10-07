@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextInput } from "@/components/ui/TextInput";
 import { TextLink } from "@/components/ui/TextLink";
+import { firstValidationMessage } from "@/lib/errors";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -22,7 +23,12 @@ export default function RegisterPage() {
             body: JSON.stringify({ email, password }),
         });
         if (!res.ok) {
-            setError(res.status === 409 ? "Email already registered" : "Registration failed");
+            if (res.status === 409) {
+                setError("Email already registered");
+                return;
+            }
+            const message = res.status === 400 ? await firstValidationMessage(res) : null;
+            setError(message ?? "Registration failed");
             return;
         }
         router.push("/login");

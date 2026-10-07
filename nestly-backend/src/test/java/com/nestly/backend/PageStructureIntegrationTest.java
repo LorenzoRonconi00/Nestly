@@ -72,6 +72,35 @@ class PageStructureIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    void pageNumbersAreLimitedToTheSupportedRange() throws Exception {
+        Session user = registerAndLogin();
+        String notebookId = createAgenda(user, "notebook");
+        setStructure(user, notebookId, "freetext");
+        String base = "/api/agendas/" + notebookId + "/pages/by-number-range";
+
+        mockMvc.perform(authed(get(base + "?from=1&count=2"), user)).andExpect(status().isOk());
+        mockMvc.perform(authed(get(base + "?from=9999&count=2"), user)).andExpect(status().isOk());
+        mockMvc.perform(authed(get(base + "?from=10000&count=2"), user)).andExpect(status().isBadRequest());
+        mockMvc.perform(authed(get(base + "?from=10001&count=1"), user)).andExpect(status().isBadRequest());
+        mockMvc.perform(authed(get(base + "?from=-5&count=1"), user)).andExpect(status().isBadRequest());
+        mockMvc.perform(authed(get(base + "?from=2147483647&count=2"), user)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void datesAreLimitedToTheSupportedRange() throws Exception {
+        Session user = registerAndLogin();
+        String agendaId = createAgenda(user, "standard");
+        setStructure(user, agendaId, "freetext");
+
+        mockMvc.perform(authed(get(dateRange(agendaId, "1900-01-01", 2)), user)).andExpect(status().isOk());
+        mockMvc.perform(authed(get(dateRange(agendaId, "2200-12-30", 2)), user)).andExpect(status().isOk());
+        mockMvc.perform(authed(get(dateRange(agendaId, "1899-12-31", 1)), user)).andExpect(status().isBadRequest());
+        mockMvc.perform(authed(get(dateRange(agendaId, "2200-12-31", 2)), user)).andExpect(status().isBadRequest());
+        mockMvc.perform(authed(get(dateRange(agendaId, "2201-01-01", 1)), user)).andExpect(status().isBadRequest());
+        mockMvc.perform(authed(get(dateRange(agendaId, "9999-12-31", 1)), user)).andExpect(status().isBadRequest());
+    }
+
+    @Test
     void notebookPagesAreAddressedByNumber() throws Exception {
         Session user = registerAndLogin();
         String notebookId = createAgenda(user, "notebook");

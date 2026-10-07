@@ -1,12 +1,16 @@
 package com.nestly.backend.service;
 
+import java.util.Locale;
 import java.util.UUID;
-import com.nestly.backend.domain.User;
-import com.nestly.backend.repository.UserRepository;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.nestly.backend.domain.User;
+import com.nestly.backend.repository.UserRepository;
 
 @Service
 public class UserService {
@@ -20,15 +24,20 @@ public class UserService {
     }
 
     public User register(String email, String rawPassword) {
-        if (userRepository.existsByEmail(email)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        String normalizedEmail = normalize(email);
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw emailAlreadyRegistered();
         }
-        User user = new User(email, passwordEncoder.encode(rawPassword));
-        return userRepository.save(user);
+        try {
+            return userRepository.save(new User(normalizedEmail, passwordEncoder.encode(rawPassword)));
+        } catch (DataIntegrityViolationException ex) {
+            // Two concurrent registrations can both pass the existence check: the unique index decides the winner
+            throw emailAlreadyRegistered();
+        }
     }
 
     public User authenticate(String email, String rawPassword) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(normalize(email))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
@@ -39,5 +48,13 @@ public class UserService {
     public User getById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    private static String normalize(String email) {
+        return email.strip().toLowerCase(Locale.ROOT);
+    }
+
+    private static ResponseStatusException emailAlreadyRegistered() {
+        return new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
     }
 }

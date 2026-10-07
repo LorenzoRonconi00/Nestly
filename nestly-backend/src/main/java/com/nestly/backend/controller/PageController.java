@@ -34,16 +34,6 @@ public class PageController {
         this.pageService = pageService;
     }
 
-    @GetMapping("/by-date/{date}")
-    public PageResponse getByDate(@PathVariable UUID agendaId, @PathVariable LocalDate date) {
-        return toResponse(pageService.getOrCreateByDate(agendaId, CurrentUser.id(), date));
-    }
-
-    @GetMapping("/by-number/{number}")
-    public PageResponse getByNumber(@PathVariable UUID agendaId, @PathVariable int number) {
-        return toResponse(pageService.getOrCreateByNumber(agendaId, CurrentUser.id(), number));
-    }
-
     @GetMapping("/by-date-range")
     public List<PageResponse> getByDateRange(
             @PathVariable UUID agendaId,

@@ -26,6 +26,9 @@ import com.nestly.backend.search.SearchOutboxService;
 public class PageService {
 
     private static final int MAX_RANGE = 7;
+    private static final int MAX_PAGE_NUMBER = 10_000;
+    private static final LocalDate MIN_DATE = LocalDate.of(1900, 1, 1);
+    private static final LocalDate MAX_DATE = LocalDate.of(2200, 12, 31);
 
     private final PageRepository pageRepository;
     private final SectionRepository sectionRepository;
@@ -41,18 +44,9 @@ public class PageService {
     }
 
     @Transactional
-    public Page getOrCreateByDate(UUID agendaId, UUID userId, LocalDate date) {
-        return getOrCreateForDate(dateAgenda(agendaId, userId), date);
-    }
-
-    @Transactional
-    public Page getOrCreateByNumber(UUID agendaId, UUID userId, int number) {
-        return getOrCreateForNumber(numberAgenda(agendaId, userId), number);
-    }
-
-    @Transactional
     public List<Page> getOrCreateRangeByDate(UUID agendaId, UUID userId, LocalDate from, int count) {
         validateCount(count);
+        validateDateRange(from, count);
         Agenda agenda = dateAgenda(agendaId, userId);
         return IntStream.range(0, count)
                 .mapToObj(offset -> getOrCreateForDate(agenda, from.plusDays(offset)))
@@ -62,9 +56,7 @@ public class PageService {
     @Transactional
     public List<Page> getOrCreateRangeByNumber(UUID agendaId, UUID userId, int from, int count) {
         validateCount(count);
-        if (from < 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page numbers start at 1");
-        }
+        validateNumberRange(from, count);
         Agenda agenda = numberAgenda(agendaId, userId);
         return IntStream.range(0, count)
                 .mapToObj(offset -> getOrCreateForNumber(agenda, from + offset))
@@ -83,7 +75,7 @@ public class PageService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found"));
         Section section = sectionRepository.findByIdAndPageId(sectionId, page.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
-                section.setData(data);
+        section.setData(data);
         Section saved = sectionRepository.save(section);
         searchOutbox.pageChanged(page.getId());
         return saved;
@@ -92,6 +84,20 @@ public class PageService {
     public List<String> getDaysWithContent(UUID agendaId, UUID userId, YearMonth month) {
         Agenda agenda = dateAgenda(agendaId, userId);
         return sectionRepository.findDaysWithContent(agenda.getId(), month.atDay(1), month.plusMonths(1).atDay(1));
+    }
+
+    private void validateDateRange(LocalDate from, int count) {
+        if (from.isBefore(MIN_DATE) || from.isAfter(MAX_DATE.minusDays(count - 1L))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Dates must be between " + MIN_DATE + " and " + MAX_DATE);
+        }
+    }
+
+    private void validateNumberRange(int from, int count) {
+        if (from < 1 || from > MAX_PAGE_NUMBER - count + 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Page numbers must be between 1 and " + MAX_PAGE_NUMBER);
+        }
     }
 
     private Agenda dateAgenda(UUID agendaId, UUID userId) {

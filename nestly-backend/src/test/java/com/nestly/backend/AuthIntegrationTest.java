@@ -1,5 +1,14 @@
 package com.nestly.backend;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -8,6 +17,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.jayway.jsonpath.JsonPath;
 
 import jakarta.servlet.http.Cookie;
 
@@ -125,5 +136,51 @@ class AuthIntegrationTest extends IntegrationTestBase {
         String login = "{\"email\":\"" + email + "\",\"password\":\"" + "a".repeat(100) + "\"}";
         mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(login))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void emailsAreCaseInsensitive() throws Exception {
+        String mixed = "Mixed." + UUID.randomUUID() + "@Example.COM";
+        String lower = mixed.toLowerCase();
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(credentials(mixed)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(credentials(lower)))
+                .andExpect(status().isConflict());
+
+        MvcResult login = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content(credentials(mixed)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(lower))
+                .andReturn();
+        String token = JsonPath.read(login.getResponse().getContentAsString(), "$.token");
+        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.email").value(lower));
+    }
+
+    @Test
+    void concurrentRegistrationsOfTheSameEmailCreateOneAccountAndConflictForTheRest() throws Exception {
+        String body = credentials(uniqueEmail());
+        int threads = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<Integer>> results = new ArrayList<>();
+        for (int index = 0; index < threads; index++) {
+            results.add(pool.submit(() -> {
+                start.await();
+                return mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+                        .andReturn().getResponse().getStatus();
+            }));
+        }
+        start.countDown();
+
+        List<Integer> statuses = new ArrayList<>();
+        for (Future<Integer> result : results) {
+            statuses.add(result.get(30, TimeUnit.SECONDS));
+        }
+        pool.shutdown();
+
+        assertThat(statuses).containsOnly(201, 409);
+        assertThat(statuses.stream().filter(status -> status == 201).count()).isEqualTo(1);
     }
 }
