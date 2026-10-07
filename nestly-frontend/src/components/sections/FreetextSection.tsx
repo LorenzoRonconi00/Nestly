@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { RevealText } from "@/components/handwriting/HandwrittenReveal";
 import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
 import { useAutosave } from "@/lib/useAutosave";
+import { MAX_FREETEXT_LENGTH } from "@/lib/sectionLimits";
 
 type Props = {
     initialData: Record<string, unknown>;
@@ -34,6 +35,7 @@ export function FreetextSection({ initialData, onSave }: Readonly<Props>) {
                     onChange={(e) => setText(e.target.value)}
                     rows={4}
                     aria-label="Free text"
+                    maxLength={MAX_FREETEXT_LENGTH}
                     className="written field-sizing-content w-full resize-none bg-transparent"
                 />
             )}

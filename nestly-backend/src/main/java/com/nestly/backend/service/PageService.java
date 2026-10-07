@@ -34,13 +34,16 @@ public class PageService {
     private final SectionRepository sectionRepository;
     private final AgendaService agendaService;
     private final SearchOutboxService searchOutbox;
+    private final SectionDataValidator sectionDataValidator;
 
     public PageService(PageRepository pageRepository, SectionRepository sectionRepository,
-            AgendaService agendaService, SearchOutboxService searchOutbox) {
+            AgendaService agendaService, SearchOutboxService searchOutbox,
+            SectionDataValidator sectionDataValidator) {
         this.pageRepository = pageRepository;
         this.sectionRepository = sectionRepository;
         this.agendaService = agendaService;
         this.searchOutbox = searchOutbox;
+        this.sectionDataValidator = sectionDataValidator;
     }
 
     @Transactional
@@ -75,6 +78,7 @@ public class PageService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found"));
         Section section = sectionRepository.findByIdAndPageId(sectionId, page.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found"));
+        sectionDataValidator.validate(section.getType(), data);
         section.setData(data);
         Section saved = sectionRepository.save(section);
         searchOutbox.pageChanged(page.getId());

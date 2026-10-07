@@ -6,6 +6,7 @@ import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { useAutosave } from "@/lib/useAutosave";
+import { clampAmount, MAX_ITEM_TEXT_LENGTH, MAX_SECTION_ITEMS } from "@/lib/sectionLimits";
 
 type ExpenseItem = { id: string; label: string; amount: number; category: string };
 type Props = { initialData: Record<string, unknown>; onSave: (data: Record<string, unknown>) => void };
@@ -69,6 +70,7 @@ export function ExpensesSection({ initialData, onSave }: Readonly<Props>) {
                                 compact
                                 placeholder="Label"
                                 aria-label="Label"
+                                maxLength={MAX_ITEM_TEXT_LENGTH}
                                 value={item.label}
                                 onChange={(e) => updateItem(item.id, { label: e.target.value })}
                                 className="min-w-0 flex-1"
@@ -79,13 +81,14 @@ export function ExpensesSection({ initialData, onSave }: Readonly<Props>) {
                                 placeholder="Amount"
                                 aria-label="Amount"
                                 value={item.amount}
-                                onChange={(e) => updateItem(item.id, { amount: Number(e.target.value) })}
+                                onChange={(e) => updateItem(item.id, { amount: clampAmount(Number(e.target.value)) })}
                                 className="w-16 shrink-0"
                             />
                             <TextInput
                                 compact
                                 placeholder="Category"
                                 aria-label="Category"
+                                maxLength={MAX_ITEM_TEXT_LENGTH}
                                 value={item.category}
                                 onChange={(e) => updateItem(item.id, { category: e.target.value })}
                                 className="w-20 shrink-0"
@@ -101,7 +104,7 @@ export function ExpensesSection({ initialData, onSave }: Readonly<Props>) {
                         </div>
                     ))}
                     <div className="flex h-8 items-center">
-                        <Button variant="secondary" size="sm" onClick={addItem}>
+                        <Button variant="secondary" size="sm" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS}>
                             + Add expense
                         </Button>
                     </div>

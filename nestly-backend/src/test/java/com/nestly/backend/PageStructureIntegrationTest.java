@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -205,6 +206,39 @@ class PageStructureIntegrationTest extends IntegrationTestBase {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"data\":{\"text\":\"hijacked\"}}"))
                 .andExpect(status().isNotFound());
+    }
+
+    private ResultActions patchSection(Session user, String agendaId, String pageId, String sectionId, String data)
+            throws Exception {
+        return mockMvc.perform(authed(patch(sectionPath(agendaId, pageId, sectionId)), user)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"data\":" + data + "}"));
+    }
+
+    @Test
+    void sectionDataWithTheWrongShapeIsRejectedAndLeavesTheStoredDataUntouched() throws Exception {
+        Session user = registerAndLogin();
+        String agendaId = createAgenda(user, "standard");
+        setStructure(user, agendaId, "freetext", "mood");
+        MvcResult pages = mockMvc.perform(authed(get(dateRange(agendaId, "2026-08-02", 1)), user))
+                .andExpect(status().isOk())
+                .andReturn();
+        String body = pages.getResponse().getContentAsString();
+        String pageId = JsonPath.read(body, "$[0].id");
+        String freetextId = JsonPath.read(body, "$[0].sections[0].id");
+        String moodId = JsonPath.read(body, "$[0].sections[1].id");
+
+        patchSection(user, agendaId, pageId, freetextId, "{\"text\":\"kept\",\"confirmed\":false}")
+                .andExpect(status().isOk());
+        patchSection(user, agendaId, pageId, freetextId, "{\"text\":\"lost\",\"unexpected\":true}")
+                .andExpect(status().isBadRequest());
+        patchSection(user, agendaId, pageId, freetextId, "{\"text\":\"" + "x".repeat(50_001) + "\"}")
+                .andExpect(status().isBadRequest());
+        patchSection(user, agendaId, pageId, moodId, "{\"value\":9}")
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(authed(get(dateRange(agendaId, "2026-08-02", 1)), user))
+                .andExpect(jsonPath("$[0].sections[0].data.text").value("kept"));
     }
 
     @Test

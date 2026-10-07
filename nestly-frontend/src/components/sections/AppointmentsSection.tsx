@@ -6,6 +6,7 @@ import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { useAutosave } from "@/lib/useAutosave";
+import { MAX_ITEM_TEXT_LENGTH, MAX_SECTION_ITEMS } from "@/lib/sectionLimits";
 
 type AppointmentItem = { id: string; time: string; description: string };
 type Props = { initialData: Record<string, unknown>; onSave: (data: Record<string, unknown>) => void };
@@ -73,6 +74,7 @@ export function AppointmentsSection({ initialData, onSave }: Readonly<Props>) {
                                 compact
                                 placeholder="Description"
                                 aria-label="Description"
+                                maxLength={MAX_ITEM_TEXT_LENGTH}
                                 value={item.description}
                                 onChange={(e) => updateItem(item.id, { description: e.target.value })}
                                 className="min-w-0 flex-1"
@@ -88,7 +90,7 @@ export function AppointmentsSection({ initialData, onSave }: Readonly<Props>) {
                         </div>
                     ))}
                     <div className="flex h-8 items-center">
-                        <Button variant="secondary" size="sm" onClick={addItem}>
+                        <Button variant="secondary" size="sm" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS}>
                             + Add appointment
                         </Button>
                     </div>
