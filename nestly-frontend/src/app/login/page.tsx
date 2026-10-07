@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { TextInput } from "@/components/ui/TextInput";
 import { TextLink } from "@/components/ui/TextLink";
 import { useQueryParam } from "@/lib/useQueryParam";
+import { useSubmit } from "@/lib/useSubmit";
 
 function readReturnTo(): string {
     const value = new URLSearchParams(window.location.search).get("returnTo");
@@ -23,26 +24,30 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const { pending, submit } = useSubmit(setError);
     const notice =
         useQueryParam("reason") === "expired"
             ? "Your session expired. Log in to continue; unsaved changes will be restored."
             : null;
 
-    async function handleSubmit(e: FormEvent) {
+    function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setError(null);
-        const res = await apiFetch("/api/auth/login", {
-            method: "POST",
-            body: JSON.stringify({ email, password }),
+        void submit(async () => {
+            const res = await apiFetch("/api/auth/login", {
+                method: "POST",
+                body: JSON.stringify({ email, password }),
+            });
+            if (!res.ok) {
+                setError(res.status === 400 || res.status === 401 ? "Invalid credentials" : "Login failed. Try again in a moment.");
+                return false;
+            }
+            const data = await res.json();
+            setToken(data.token);
+            await flushDrafts();
+            router.push(readReturnTo());
+            return true;
         });
-        if (!res.ok) {
-            setError("Invalid credentials");
-            return;
-        }
-        const data = await res.json();
-        setToken(data.token);
-        await flushDrafts();
-        router.push(readReturnTo());
     }
 
     return (
@@ -72,7 +77,9 @@ export default function LoginPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                     />
-                    <Button type="submit">Login</Button>
+                    <Button type="submit" disabled={pending}>
+                        {pending ? "Logging in…" : "Login"}
+                    </Button>
                     <p className="text-sm text-ink-soft">
                         No account yet? <TextLink href="/register">Register</TextLink>
                     </p>

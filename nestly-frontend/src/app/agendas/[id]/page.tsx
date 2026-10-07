@@ -3,18 +3,21 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { authFetch, ignoreSessionExpired } from "@/lib/api";
+import { authFetch } from "@/lib/api";
 import { todayLocal } from "@/lib/date";
 import { CoverColorPicker } from "@/components/cover/CoverColorPicker";
 import { CoverViewer } from "@/components/cover/CoverViewer";
 import type { CoverTimeline } from "@/components/cover/Cover3D";
 import { DeleteAgendaPanel } from "@/components/DeleteAgendaPanel";
+import { LoadError } from "@/components/LoadError";
 import { useOpening } from "@/components/opening/OpeningProvider";
 import { Button, buttonClassName } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextInput } from "@/components/ui/TextInput";
 import { TextLink } from "@/components/ui/TextLink";
 import { parseCoverTheme, serializeCoverTheme } from "@/lib/coverTheme";
+import { loadJson, type LoadStatus } from "@/lib/loadJson";
+import { useSubmit } from "@/lib/useSubmit";
 
 type Agenda = {
     id: string;
@@ -31,20 +34,31 @@ export default function AgendaSummaryPage() {
     const timelineRef = useRef<CoverTimeline | null>(null);
     const coverBoxRef = useRef<HTMLDivElement>(null);
     const [agenda, setAgenda] = useState<Agenda | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState<LoadStatus>("loading");
+    const [attempt, setAttempt] = useState(0);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [editing, setEditing] = useState(false);
     const [draftName, setDraftName] = useState("");
     const [draftColor, setDraftColor] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const { pending, submit } = useSubmit(setError);
 
     useEffect(() => {
-        authFetch(`/api/agendas/${params.id}`)
-            .catch(ignoreSessionExpired)
-            .then((res) => (res?.ok ? res.json() : null))
-            .then(setAgenda)
-            .finally(() => setLoading(false));
-    }, [params.id]);
+        let cancelled = false;
+        loadJson<Agenda>(`/api/agendas/${params.id}`).then((result) => {
+            if (cancelled) return;
+            if (result.kind === "ok") setAgenda(result.data);
+            setStatus(result.kind);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [params.id, attempt]);
+
+    function retryLoading() {
+        setStatus("loading");
+        setAttempt((current) => current + 1);
+    }
 
     function startEditing() {
         if (!agenda) return;
@@ -54,33 +68,37 @@ export default function AgendaSummaryPage() {
         setEditing(true);
     }
 
-    async function handleSave() {
+    function handleSave() {
         setError(null);
-        const res = await authFetch(`/api/agendas/${params.id}`, {
-            method: "PUT",
-            body: JSON.stringify({
-                name: draftName,
-                coverTheme: serializeCoverTheme({ kind: "solid", color: draftColor }),
-            }),
-        }).catch(ignoreSessionExpired);
-        if (!res) return;
-        if (!res.ok) {
-            setError("Could not save changes");
-            return;
-        }
-        setAgenda(await res.json());
-        setEditing(false);
+        void submit(async () => {
+            const res = await authFetch(`/api/agendas/${params.id}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    name: draftName,
+                    coverTheme: serializeCoverTheme({ kind: "solid", color: draftColor }),
+                }),
+            });
+            if (!res.ok) {
+                setError("Could not save changes");
+                return false;
+            }
+            setAgenda(await res.json());
+            setEditing(false);
+            return false;
+        });
     }
 
-    async function handleDelete() {
+    function handleDelete() {
         setError(null);
-        const res = await authFetch(`/api/agendas/${params.id}`, { method: "DELETE" }).catch(ignoreSessionExpired);
-        if (!res) return;
-        if (!res.ok) {
-            setError("Could not delete agenda");
-            return;
-        }
-        router.push("/");
+        void submit(async () => {
+            const res = await authFetch(`/api/agendas/${params.id}`, { method: "DELETE" });
+            if (!res.ok) {
+                setError("Could not delete agenda");
+                return false;
+            }
+            router.push("/");
+            return true;
+        });
     }
 
     function handleOpenClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
@@ -99,7 +117,14 @@ export default function AgendaSummaryPage() {
         });
     }
 
-    if (loading) return null;
+    if (status === "loading" || status === "expired") return null;
+    if (status === "error") {
+        return (
+            <main className="flex min-h-screen items-center justify-center px-4">
+                <LoadError onRetry={retryLoading} />
+            </main>
+        );
+    }
     if (!agenda) return <p className="p-8">Agenda not found</p>;
 
     const openHref =
@@ -135,7 +160,7 @@ export default function AgendaSummaryPage() {
                     />
                     <CoverColorPicker value={draftColor} onChange={setDraftColor} />
                     <div className="flex gap-2">
-                        <Button onClick={handleSave} disabled={draftName.trim() === ""}>
+                        <Button onClick={handleSave} disabled={draftName.trim() === "" || pending}>
                             Save
                         </Button>
                         <Button variant="secondary" onClick={() => setEditing(false)}>
@@ -170,6 +195,7 @@ export default function AgendaSummaryPage() {
             {confirmingDelete ? (
                 <DeleteAgendaPanel
                     agendaName={agenda.name}
+                    pending={pending}
                     onConfirm={handleDelete}
                     onCancel={() => setConfirmingDelete(false)}
                 />

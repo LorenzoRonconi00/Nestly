@@ -47,6 +47,7 @@ public abstract class IntegrationTestBase {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
+        registry.add("nestly.jwt.secret", () -> "test-only-jwt-secret-0123456789-abcdefghijklmnop");
         registry.add("nestly.search.url", () -> "http://" + MEILI.getHost() + ":" + MEILI.getMappedPort(7700));
         registry.add("nestly.search.api-key", () -> MEILI_KEY);
         registry.add("nestly.search.sync-interval-ms", () -> "3600000");

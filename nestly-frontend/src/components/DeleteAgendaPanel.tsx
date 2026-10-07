@@ -6,11 +6,12 @@ import { TextInput } from "@/components/ui/TextInput";
 
 type Props = {
     agendaName: string;
+    pending: boolean;
     onConfirm: () => void;
     onCancel: () => void;
 };
 
-export function DeleteAgendaPanel({ agendaName, onConfirm, onCancel }: Readonly<Props>) {
+export function DeleteAgendaPanel({ agendaName, pending, onConfirm, onCancel }: Readonly<Props>) {
     const [typed, setTyped] = useState("");
     const matches = typed.trim() === agendaName.trim();
 
@@ -26,7 +27,7 @@ export function DeleteAgendaPanel({ agendaName, onConfirm, onCancel }: Readonly<
                 aria-label="Agenda name confirmation"
             />
             <div className="flex gap-2">
-                <Button variant="danger" onClick={onConfirm} disabled={!matches}>
+                <Button variant="danger" onClick={onConfirm} disabled={!matches || pending}>
                     Delete forever
                 </Button>
                 <Button variant="secondary" onClick={onCancel}>

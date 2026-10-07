@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextInput } from "@/components/ui/TextInput";
 import { TextLink } from "@/components/ui/TextLink";
+import { useSubmit } from "@/lib/useSubmit";
 import { firstValidationMessage } from "@/lib/errors";
 
 export default function RegisterPage() {
@@ -14,24 +15,28 @@ export default function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const { pending, submit } = useSubmit(setError);
 
-    async function handleSubmit(e: React.FormEvent) {
+    function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
-        const res = await apiFetch("/api/auth/register", {
-            method: "POST",
-            body: JSON.stringify({ email, password }),
-        });
-        if (!res.ok) {
-            if (res.status === 409) {
-                setError("Email already registered");
-                return;
+        void submit(async () => {
+            const res = await apiFetch("/api/auth/register", {
+                method: "POST",
+                body: JSON.stringify({ email, password }),
+            });
+            if (!res.ok) {
+                if (res.status === 409) {
+                    setError("Email already registered");
+                    return false;
+                }
+                const message = res.status === 400 ? await firstValidationMessage(res) : null;
+                setError(message ?? "Registration failed");
+                return false;
             }
-            const message = res.status === 400 ? await firstValidationMessage(res) : null;
-            setError(message ?? "Registration failed");
-            return;
-        }
-        router.push("/login");
+            router.push("/login");
+            return true;
+        });
     }
 
     return (
@@ -61,7 +66,9 @@ export default function RegisterPage() {
                         required
                         minLength={8}
                     />
-                    <Button type="submit">Register</Button>
+                    <Button type="submit" disabled={pending}>
+                        {pending ? "Creating account…" : "Register"}
+                    </Button>
                     <p className="text-sm text-ink-soft">
                         Already have an account? <TextLink href="/login">Login</TextLink>
                     </p>

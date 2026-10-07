@@ -5,19 +5,19 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
       - nestly-postgres-data:/var/lib/postgresql/data
   meilisearch:
     image: getmeili/meilisearch:v1.54.3
     restart: unless-stopped
     environment:
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?Set MEILI_MASTER_KEY in .env}
       MEILI_NO_ANALYTICS: "true"
     ports:
-      - "${MEILI_PORT}:7700"
+      - "127.0.0.1:${MEILI_PORT}:7700"
     volumes:
       - nestly-meili-data:/meili_data
 

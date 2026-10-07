@@ -4,7 +4,7 @@
 
 Nestly is a full-stack web application for keeping a personal agenda, diary or notebook. It combines a classic structured-planner workflow (daily sections such as expenses, checklists, mood, appointments and free text) with a tactile, handcrafted interface: a WebGL book cover, a 3D page flip, and a handwriting-style reveal with sound.
 
-- **Status:** feature-complete for v1; production deployment still to be done (see [Roadmap](#roadmap)).
+- **Status:** feature-complete for v1, with the simplifications listed under [Known limitations](#known-limitations); production deployment still to be done (see [Roadmap](#roadmap)).
 - **Monorepo:** `nestly-backend` (Spring Boot) and `nestly-frontend` (Next.js).
 
 ---
@@ -45,7 +45,7 @@ Nestly is a full-stack web application for keeping a personal agenda, diary or n
 - Opening animation: the cover swings open, a glow fills the screen, and the page is revealed. Click or `Esc` skips it.
 
 **Writing**
-- Debounced autosave; pending edits are flushed when a page is left.
+- Debounced autosave; pending edits are flushed when you navigate away inside the app (closing the tab within a fraction of a second of typing can still lose the last edit).
 - "Confirm" turns a section into handwriting: words fade in, a pencil follows them, with a pencil-on-paper sound (mutable).
 - Drafts are kept when the session expires and restored after logging in again; save failures and out-of-date pages are surfaced instead of failing silently.
 
@@ -59,7 +59,8 @@ Nestly is a full-stack web application for keeping a personal agenda, diary or n
 **Accessibility and resilience**
 - `prefers-reduced-motion` is honoured (no flip, glow, pencil or sound).
 - A 2D cover fallback when WebGL is unavailable.
-- Keyboard-reachable controls with visible focus, labelled icon buttons, and text contrast checked against WCAG AA.
+- Keyboard-reachable controls with visible focus, labelled icon buttons, and text contrast checked against WCAG AA (known exceptions are listed under [Known limitations](#known-limitations)).
+- Loading and save failures are reported with a message and a retry instead of a blank screen; forms show a pending state and cannot be submitted twice.
 
 ---
 
@@ -138,16 +139,17 @@ cp .env.example .env        # PowerShell: Copy-Item .env.example .env
 docker compose up -d
 ```
 
-This starts PostgreSQL (host port `5433`) and Meilisearch (`7700`). The values in `.env.example` are for local development only.
+This starts PostgreSQL (host port `5433`) and Meilisearch (`7700`), both bound to `127.0.0.1` only. Compose refuses to start without `POSTGRES_PASSWORD` and `MEILI_MASTER_KEY`. The values in `.env.example` are for local development only.
 
 ### 2. Run the backend
 
 ```bash
 cd nestly-backend
+cp .env.example .env        # PowerShell: Copy-Item .env.example .env
 ./mvnw spring-boot:run      # Windows: .\mvnw.cmd spring-boot:run
 ```
 
-The backend listens on `http://localhost:8080`. Flyway creates the schema on first start. The default development values already match the Compose services; to override anything, copy `nestly-backend/.env.example` to `nestly-backend/.env` (it is loaded automatically and ignored by Git).
+The backend listens on `http://localhost:8080`. Flyway creates the schema on first start. `.env` is loaded automatically and ignored by Git. The code contains no secrets or credentials: `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` and `MEILISEARCH_API_KEY` must always be provided. The values in `.env.example` match the Compose services and are for local development only (`MEILISEARCH_API_KEY` must equal `MEILI_MASTER_KEY` in the root `.env`).
 
 On first start the search index is created and filled with any existing content.
 
@@ -171,17 +173,19 @@ Open `http://localhost:3000`, register an account and create your first agenda.
 | --- | --- | --- |
 | `SPRING_PROFILES_ACTIVE` | `dev` | `dev` or `prod` |
 | `DATABASE_URL` | (dev: built in) | JDBC URL; required in `prod` |
-| `DB_USERNAME`, `DB_PASSWORD` | `nestly` | Database credentials; required in `prod` |
-| `JWT_SECRET` | dev-only value | HMAC secret, at least 32 characters; **required in `prod`** |
+| `DB_USERNAME`, `DB_PASSWORD` | (none) | Database credentials; **required in every profile** |
+| `JWT_SECRET` | (none) | HMAC secret, at least 32 characters; **required in every profile** |
 | `JWT_EXPIRATION_MINUTES` | `15` | Access-token lifetime |
 | `REFRESH_TOKEN_EXPIRATION_DAYS` | `30` | Refresh-token lifetime |
-| `REFRESH_COOKIE_SECURE` | `false` (`true` in `prod`) | Sets the `Secure` flag on the refresh cookie |
+| `REFRESH_COOKIE_SECURE` | `false` in `dev`, `true` in `prod` | Sets the `Secure` flag on the refresh cookie |
 | `REFRESH_TOKEN_CLEANUP_CRON` | `0 0 3 * * *` | When expired refresh tokens are purged |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated list of allowed origins |
 | `MEILISEARCH_URL` | `http://localhost:7700` | Required in `prod` |
-| `MEILISEARCH_API_KEY` | dev master key | Required in `prod` |
+| `MEILISEARCH_API_KEY` | (none) | **Required in every profile** |
 | `MEILISEARCH_INDEX` | `pages` | Index name |
 | `SEARCH_SYNC_INTERVAL_MS` | `3000` | How often the outbox is processed |
+
+A missing `JWT_SECRET` or `MEILISEARCH_API_KEY` stops the application at startup with a "could not resolve placeholder" error. A missing database credential shows up as a database authentication error that names the variable (for example `${DB_USERNAME}`). The default profile is `dev`: set `SPRING_PROFILES_ACTIVE=prod` in production.
 
 ### Frontend
 
@@ -201,7 +205,7 @@ All endpoints except those marked public require `Authorization: Bearer <access 
 
 | Method and path | Description |
 | --- | --- |
-| `POST /api/auth/register` | Create an account (public) |
+| `POST /api/auth/register` | Create an account (public). Email is case-insensitive (stored lowercase, `409` when taken); password is at least 8 characters and at most 72 bytes in UTF-8 |
 | `POST /api/auth/login` | Log in; returns an access token and sets the refresh cookie (public) |
 | `POST /api/auth/refresh` | Rotate the refresh token and issue a new access token (public, uses the cookie) |
 | `POST /api/auth/logout` | Revoke the session (public, uses the cookie) |
@@ -209,30 +213,34 @@ All endpoints except those marked public require `Authorization: Bearer <access 
 | `GET /api/agendas`, `POST /api/agendas` | List / create agendas |
 | `GET`, `PUT`, `DELETE /api/agendas/{id}` | Read / rename and recolour / delete |
 | `PATCH /api/agendas/{id}/structure-template` | Change the page structure (retroactive; `409` when data would be lost without `confirmDataLoss`) |
-| `GET /api/agendas/{id}/pages/by-date-range?from&count` | Pages for a range of days (created on demand, at most 7) |
-| `GET /api/agendas/{id}/pages/by-number-range?from&count` | Pages for a range of numbers (notebooks) |
+| `GET /api/agendas/{id}/pages/by-date-range?from&count` | Pages for a range of days (created on demand, at most 7; dates from 1900-01-01 to 2200-12-31) |
+| `GET /api/agendas/{id}/pages/by-number-range?from&count` | Pages for a range of numbers (notebooks; pages 1 to 10,000) |
 | `GET /api/agendas/{id}/pages/days-with-content?month=YYYY-MM` | Days of a month that hold content |
-| `PATCH /api/agendas/{id}/pages/{pageId}/sections/{sectionId}` | Save a section's data |
+| `PATCH /api/agendas/{id}/pages/{pageId}/sections/{sectionId}` | Save a section's data (`400` when its fields, types or sizes do not fit the section type) |
 | `GET /api/agendas/{id}/search?q=` | Full-text search with highlighted segments |
 | `GET /actuator/health` | Health check (public) |
+
+Validation failures answer `400` with `{"errors": [{"field": "...", "message": "..."}]}`.
 
 ---
 
 ## Testing and quality
 
 ```bash
-# Backend: 34 integration tests against real PostgreSQL and Meilisearch containers (Docker must be running)
+# Backend: 48 tests (integration tests against real PostgreSQL and Meilisearch containers, plus unit tests; Docker must be running)
 cd nestly-backend
 ./mvnw test
 
-# Frontend: 55 unit and component tests, linting and type-checking
+# Frontend: 72 unit and component tests, linting and type-checking
 cd nestly-frontend
 npm test
 npm run lint
 npx tsc --noEmit
 ```
 
-The backend suite uses Testcontainers rather than an in-memory database, because the schema relies on PostgreSQL features (JSONB, partial unique indexes, `gen_random_uuid()`). It covers authentication and refresh-token rotation and reuse detection, per-user isolation on every endpoint, retroactive structure changes and data-loss protection, concurrent page creation, and search indexing and querying. The frontend suite covers date handling across daylight-saving changes, autosave semantics, token renewal under concurrent requests, save-result mapping and the search panel.
+`npx tsc --noEmit` relies on the types that Next.js generates: on a fresh checkout run `npx next typegen` (or `npm run build`) first, otherwise it reports `Cannot find name 'LayoutProps'`.
+
+The backend suite uses Testcontainers rather than an in-memory database, because the schema relies on PostgreSQL features (JSONB, partial unique indexes, `gen_random_uuid()`). It covers authentication and refresh-token rotation and reuse detection, per-user isolation on every endpoint, password and case-insensitive email rules (including concurrent registrations), page and date limits, section data validation, retroactive structure changes and data-loss protection, concurrent page creation, and search indexing and querying. The frontend suite covers date handling across daylight-saving changes, autosave semantics, token renewal under concurrent requests, save-result mapping, load and submit error handling, input limits and the search panel.
 
 ---
 
@@ -252,9 +260,10 @@ nestly/
 │       │   ├── job/            Scheduled maintenance
 │       │   ├── repository/     Spring Data repositories
 │       │   ├── search/         Meilisearch client, outbox, indexer, search service
-│       │   └── service/        Business logic
+│       │   ├── service/        Business logic
+│       │   └── validation/     Custom Bean Validation constraints
 │       ├── main/resources/db/migration/   Flyway migrations
-│       └── test/               Integration tests (Testcontainers)
+│       └── test/               Integration tests (Testcontainers) and unit tests
 └── nestly-frontend/
     ├── public/sounds/          Pencil sound and its licence
     └── src/
@@ -278,6 +287,9 @@ nestly/
 | Two-page spread with a rigid 3D leaf | Real page turning that keeps editable content, instead of a curl library built for static content |
 | Retroactive structure changes | Every page always matches the current template; removing populated sections requires confirmation |
 | One light theme | A single, coherent pastel identity on every device; no dark mode by design |
+| No secrets in code | The application never falls back to a built-in secret or credential: a forgotten setting stops the startup instead of running with a publicly known value. The cost is one `cp .env.example .env` on first run |
+| Fixed input limits | Pages 1 to 10,000 per notebook, dates 1900-01-01 to 2200-12-31, at most 100 entries per list section, 500 characters per entry and 50,000 characters of free text. They are constants in code, not configuration: simple and testable. The frontend repeats them (`sectionLimits.ts`) only to avoid saves that the server would reject |
+| Strict validation of section data | Every save is checked against the section type (known fields, types, sizes), which keeps the JSONB column flexible without storing garbage or oversized data. Adding a section type means adding its rules to `SectionDataValidator` |
 
 ---
 
@@ -290,11 +302,16 @@ nestly/
 - No password recovery, email verification or social login.
 - No offline mode.
 - Only solid-colour cover themes are available.
+- **No rate limiting** on the authentication endpoints (a deliberate choice for now); registering with an existing email answers `409`, which reveals that the account exists.
+- Unsaved typing can be lost if the tab is closed within the autosave delay (about 0.8 seconds).
+- Mood is a 1 to 5 numeric scale (not emoji or a slider), sections have no per-section settings, and diary agendas behave exactly like standard ones.
+- Accessibility refinements are still pending: out-of-month days in the calendar have low contrast, the small buttons are below the 24 px WCAG 2.2 target size, and the popup dialogs do not manage focus.
 
 ---
 
 ## Roadmap
 
+- Rate limiting and abuse protection for authentication, then the accessibility refinements above.
 - Containerised deployment, HTTPS, secret management and continuous integration.
 - Drag-to-flip gesture for the pages.
 - Patterned cover themes (floral, dots, stripes) generated procedurally.

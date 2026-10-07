@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StructurePreview } from "@/components/structure/StructurePreview";
+import { LoadError } from "@/components/LoadError";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextLink } from "@/components/ui/TextLink";
-import { authFetch, ignoreSessionExpired } from "@/lib/api";
+import { authFetch } from "@/lib/api";
 import { DEFAULT_COVER_THEME, parseCoverTheme } from "@/lib/coverTheme";
+import { loadJson, type LoadStatus } from "@/lib/loadJson";
+import { useSubmit } from "@/lib/useSubmit";
 
 const SECTION_TYPES = [
     { value: "expenses", label: "Expenses" },
@@ -29,20 +32,31 @@ export default function StructurePage() {
     const router = useRouter();
     const [sections, setSections] = useState<SectionItem[]>([]);
     const [coverColor, setCoverColor] = useState(DEFAULT_COVER_THEME.color);
-    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState<LoadStatus>("loading");
+    const [attempt, setAttempt] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const { pending, submit } = useSubmit(setError);
     const [pendingLoss, setPendingLoss] = useState<DataLoss[] | null>(null);
 
     useEffect(() => {
-        authFetch(`/api/agendas/${params.id}`)
-            .catch(ignoreSessionExpired)
-            .then((res) => (res?.ok ? res.json() : null))
-            .then((data) => {
-                if (data?.sections) setSections(data.sections);
-                if (data) setCoverColor(parseCoverTheme(data.coverTheme).color);
-            })
-            .finally(() => setLoading(false));
-    }, [params.id]);
+        let cancelled = false;
+        loadJson<{ sections: SectionItem[]; coverTheme: string | null }>(`/api/agendas/${params.id}`).then((result) => {
+            if (cancelled) return;
+            if (result.kind === "ok") {
+                setSections(result.data.sections);
+                setCoverColor(parseCoverTheme(result.data.coverTheme).color);
+            }
+            setStatus(result.kind);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [params.id, attempt]);
+
+    function retryLoading() {
+        setStatus("loading");
+        setAttempt((current) => current + 1);
+    }
 
     function changeSections(next: SectionItem[]) {
         setSections(next);
@@ -67,26 +81,36 @@ export default function StructurePage() {
         changeSections(reordered.map((s, i) => ({ ...s, order: i + 1 })));
     }
 
-    async function save(confirmDataLoss: boolean) {
+    function save(confirmDataLoss: boolean) {
         setError(null);
-        const res = await authFetch(`/api/agendas/${params.id}/structure-template`, {
-            method: "PATCH",
-            body: JSON.stringify({ sections, confirmDataLoss }),
-        }).catch(ignoreSessionExpired);
-        if (!res) return;
-        if (res.status === 409) {
-            const body = await res.json();
-            setPendingLoss(body.sections);
-            return;
-        }
-        if (!res.ok) {
-            setError("Could not save structure");
-            return;
-        }
-        router.push(`/agendas/${params.id}`);
+        void submit(async () => {
+            const res = await authFetch(`/api/agendas/${params.id}/structure-template`, {
+                method: "PATCH",
+                body: JSON.stringify({ sections, confirmDataLoss }),
+            });
+            if (res.status === 409) {
+                const body = await res.json();
+                setPendingLoss(body.sections);
+                return false;
+            }
+            if (!res.ok) {
+                setError("Could not save structure");
+                return false;
+            }
+            router.push(`/agendas/${params.id}`);
+            return true;
+        });
     }
 
-    if (loading) return null;
+    if (status === "loading" || status === "expired") return null;
+    if (status === "error") {
+        return (
+            <main className="flex min-h-screen items-center justify-center px-4">
+                <LoadError onRetry={retryLoading} />
+            </main>
+        );
+    }
+    if (status === "not-found") return <p className="p-8">Agenda not found</p>;
 
     const activeTypes = new Set(sections.map((s) => s.type));
 
@@ -171,7 +195,7 @@ export default function StructurePage() {
                                 ))}
                             </ul>
                             <div className="flex gap-2">
-                                <Button variant="danger" onClick={() => save(true)}>
+                                <Button variant="danger" onClick={() => save(true)} disabled={pending}>
                                     Delete and save
                                 </Button>
                                 <Button variant="secondary" onClick={() => setPendingLoss(null)}>
@@ -182,7 +206,7 @@ export default function StructurePage() {
                     )}
 
                     <div className="flex items-center gap-4">
-                        <Button onClick={() => save(false)} disabled={sections.length === 0}>
+                        <Button onClick={() => save(false)} disabled={sections.length === 0 || pending}>
                             Confirm
                         </Button>
                         <TextLink href={`/agendas/${params.id}`} className="text-sm">

@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { authFetch, ignoreSessionExpired } from "@/lib/api";
+import { authFetch } from "@/lib/api";
 import { CoverViewer } from "@/components/cover/CoverViewer";
 import { CoverColorPicker } from "@/components/cover/CoverColorPicker";
 import { DEFAULT_COVER_THEME, serializeCoverTheme } from "@/lib/coverTheme";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextInput } from "@/components/ui/TextInput";
+import { useSubmit } from "@/lib/useSubmit";
 
 const TEMPLATES = [
     { value: "notebook", label: "Notebook" },
@@ -22,23 +23,26 @@ export default function NewAgendaPage() {
     const [baseTemplate, setBaseTemplate] = useState("standard");
     const [coverColor, setCoverColor] = useState(DEFAULT_COVER_THEME.color);
     const [error, setError] = useState<string | null>(null);
+    const { pending, submit } = useSubmit(setError);
 
     const coverTheme = { kind: "solid" as const, color: coverColor };
 
-    async function handleSubmit(e: React.FormEvent) {
+    function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
-        const res = await authFetch("/api/agendas", {
-            method: "POST",
-            body: JSON.stringify({ name, baseTemplate, coverTheme: serializeCoverTheme(coverTheme) }),
-        }).catch(ignoreSessionExpired);
-        if (!res) return;
-        if (!res.ok) {
-            setError("Could not create agenda");
-            return;
-        }
-        const data = await res.json();
-        router.push(`/agendas/${data.id}/structure`);
+        void submit(async () => {
+            const res = await authFetch("/api/agendas", {
+                method: "POST",
+                body: JSON.stringify({ name, baseTemplate, coverTheme: serializeCoverTheme(coverTheme) }),
+            });
+            if (!res.ok) {
+                setError("Could not create agenda");
+                return false;
+            }
+            const data = await res.json();
+            router.push(`/agendas/${data.id}/structure`);
+            return true;
+        });
     }
 
     return (
@@ -77,7 +81,9 @@ export default function NewAgendaPage() {
                             </label>
                         ))}
                     </fieldset>
-                    <Button type="submit">Continue</Button>
+                    <Button type="submit" disabled={pending}>
+                        Continue
+                    </Button>
                 </form>
             </Card>
         </main>

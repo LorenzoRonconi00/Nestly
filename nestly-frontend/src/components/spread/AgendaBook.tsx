@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SaveProblemBanner } from "@/components/SaveProblemBanner";
+import { LoadError } from "@/components/LoadError";
 import { SoundToggle } from "@/components/handwriting/SoundToggle";
 import { usePageReady } from "@/components/opening/OpeningProvider";
 import { BookStage } from "@/components/spread/BookStage";
 import { Button } from "@/components/ui/Button";
 import { TextLink } from "@/components/ui/TextLink";
-import { authFetch, ignoreSessionExpired } from "@/lib/api";
 import { parseCoverTheme } from "@/lib/coverTheme";
 import { addDays, formatDateLong, todayLocal } from "@/lib/date";
 import { fetchDateRange, fetchNumberRange, type PageData } from "@/lib/pages";
@@ -20,6 +20,7 @@ import { CalendarMenu } from "@/components/spread/CalendarMenu";
 import { PageJumpMenu } from "@/components/spread/PageJumpMenu";
 import { SearchMenu } from "@/components/spread/SearchMenu";
 import type { SearchHit } from "@/lib/search";
+import { loadJson } from "@/lib/loadJson";
 
 type AgendaInfo = { baseTemplate: string; coverTheme: string | null };
 
@@ -52,6 +53,8 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
     const count = wide ? 2 : 1;
     const { save, problem } = useSectionSaver(agendaId);
     const [agenda, setAgenda] = useState<AgendaInfo | null | undefined>(undefined);
+    const [agendaFailed, setAgendaFailed] = useState(false);
+    const [agendaAttempt, setAgendaAttempt] = useState(0);
     const [displayed, setDisplayed] = useState<SpreadData | null | undefined>(undefined);
     const [flip, setFlip] = useState<FlipState | null>(null);
     const displayedRef = useRef<SpreadData | null | undefined>(undefined);
@@ -155,11 +158,22 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
 
 
     useEffect(() => {
-        authFetch(`/api/agendas/${agendaId}`)
-            .catch(ignoreSessionExpired)
-            .then((res) => (res?.ok ? res.json() : null))
-            .then(setAgenda);
-    }, [agendaId]);
+        let cancelled = false;
+        loadJson<AgendaInfo>(`/api/agendas/${agendaId}`).then((result) => {
+            if (cancelled || result.kind === "expired") return;
+            setAgendaFailed(result.kind === "error");
+            setAgenda(result.kind === "ok" ? result.data : null);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [agendaId, agendaAttempt]);
+
+    function retryAgenda() {
+        setAgendaFailed(false);
+        setAgenda(undefined);
+        setAgendaAttempt((current) => current + 1);
+    }
 
     useEffect(() => {
         if (!agenda || flippingRef.current) return;
@@ -203,6 +217,13 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [go]);
 
+    if (agendaFailed) {
+        return (
+            <main className="flex min-h-screen items-center justify-center px-4">
+                <LoadError onRetry={retryAgenda} />
+            </main>
+        );
+    }
     if (agenda === null) return <p className="p-8">Agenda not found</p>;
     if (!agenda || displayed === undefined) return null;
 
@@ -228,7 +249,7 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
                     }}
                 />
             ) : (
-                <p className="text-ink-soft">Page not found</p>
+                <LoadError onRetry={() => window.location.reload()} />
             )}
             <div className="flex flex-wrap items-center justify-center gap-3">
                 <Button variant="secondary" disabled={!canGoPrevious} onClick={() => go("prev")}>

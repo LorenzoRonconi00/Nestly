@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { authFetch, ignoreSessionExpired, logout } from "@/lib/api";
+import { logout } from "@/lib/api";
+import { loadJson } from "@/lib/loadJson";
 import { useHasToken } from "@/lib/useHasToken";
 import { Button, buttonClassName } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { LoadError } from "@/components/LoadError";
 
 type Me = { userId: string; email: string };
 
@@ -16,22 +18,43 @@ export default function Home() {
   const hasToken = useHasToken();
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [agendas, setAgendas] = useState<AgendaSummary[] | null>(null);
+  const [meFailed, setMeFailed] = useState(false);
+  const [agendasFailed, setAgendasFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!hasToken) return;
-    authFetch("/api/auth/me", {}, false)
-      .catch(ignoreSessionExpired)
-      .then((res) => (res?.ok ? res.json() : null))
-      .then(setMe);
-  }, [hasToken]);
+    let cancelled = false;
+    loadJson<Me>("/api/auth/me", false).then((result) => {
+      if (cancelled) return;
+      setMeFailed(result.kind === "error");
+      setMe(result.kind === "ok" ? result.data : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hasToken, attempt]);
 
   useEffect(() => {
     if (!me) return;
-    authFetch("/api/agendas", {}, false)
-      .catch(ignoreSessionExpired)
-      .then((res) => (res?.ok ? res.json() : []))
-      .then(setAgendas);
-  }, [me]);
+    let cancelled = false;
+    loadJson<AgendaSummary[]>("/api/agendas", false).then((result) => {
+      if (cancelled) return;
+      setAgendasFailed(result.kind !== "ok");
+      setAgendas(result.kind === "ok" ? result.data : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [me, attempt]);
+
+  function retryLoading() {
+    setMeFailed(false);
+    setMe(undefined);
+    setAgendasFailed(false);
+    setAgendas(null);
+    setAttempt((current) => current + 1);
+  }
 
   async function handleLogout() {
     await logout();
@@ -40,6 +63,14 @@ export default function Home() {
 
   const loading = hasToken === null || (hasToken && me === undefined);
   if (loading) return null;
+
+  if (meFailed) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-4">
+        <LoadError onRetry={retryLoading} />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-4 py-8">
@@ -56,6 +87,7 @@ export default function Home() {
         <>
           <Card className="flex flex-col gap-3">
             <h2 className="text-lg font-bold">Your agendas</h2>
+            {agendasFailed && <LoadError onRetry={retryLoading} />}
             {agendas?.length === 0 && <p className="text-sm text-ink-soft">No agendas yet</p>}
             {agendas && agendas.length > 0 && (
               <ul className="flex flex-col">
