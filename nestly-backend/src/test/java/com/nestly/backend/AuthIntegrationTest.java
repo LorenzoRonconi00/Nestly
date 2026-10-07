@@ -95,4 +95,35 @@ class AuthIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(post("/api/auth/refresh").cookie(session.refreshCookie()))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void registrationRejectsPasswordsLongerThan72BytesWithAClearMessage() throws Exception {
+        String longAscii = "a".repeat(73);
+        String multiByte = "è".repeat(37);
+        for (String password : new String[]{longAscii, multiByte}) {
+            String body = "{\"email\":\"" + uniqueEmail() + "\",\"password\":\"" + password + "\"}";
+            mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[0].field").value("password"))
+                    .andExpect(jsonPath("$.errors[0].message").value(org.hamcrest.Matchers.containsString("72 bytes")));
+        }
+    }
+
+    @Test
+    void registrationAcceptsAPasswordOfExactly72Bytes() throws Exception {
+        String body = "{\"email\":\"" + uniqueEmail() + "\",\"password\":\"" + "a".repeat(72) + "\"}";
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void loginRejectsPasswordsThatBcryptWouldSilentlyTruncate() throws Exception {
+        String email = uniqueEmail();
+        String register = "{\"email\":\"" + email + "\",\"password\":\"" + "a".repeat(72) + "\"}";
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(register))
+                .andExpect(status().isCreated());
+        String login = "{\"email\":\"" + email + "\",\"password\":\"" + "a".repeat(100) + "\"}";
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(login))
+                .andExpect(status().isBadRequest());
+    }
 }
