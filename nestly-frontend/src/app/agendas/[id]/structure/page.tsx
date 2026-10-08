@@ -2,48 +2,54 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { StructurePreview } from "@/components/structure/StructurePreview";
 import { LoadError } from "@/components/LoadError";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { TextLink } from "@/components/ui/TextLink";
+import { RiseIn } from "@/components/auth/RiseIn";
+import { PageComposer } from "@/components/structure/PageComposer";
+import { SectionPalette } from "@/components/structure/SectionPalette";
+import { DataLossNotice, LeaveNotice } from "@/components/structure/StructureNotices";
+import { sectionInfo } from "@/components/structure/sectionTypes";
+import { BookSpread } from "@/components/ui/BookSpread";
+import { CrayonButton } from "@/components/ui/CrayonButton";
+import { FormMessage } from "@/components/ui/FormMessage";
 import { authFetch } from "@/lib/api";
 import { DEFAULT_COVER_THEME, parseCoverTheme } from "@/lib/coverTheme";
 import { loadJson, type LoadStatus } from "@/lib/loadJson";
 import { useSubmit } from "@/lib/useSubmit";
 
-const SECTION_TYPES = [
-    { value: "expenses", label: "Expenses" },
-    { value: "checklist", label: "Checklist" },
-    { value: "mood", label: "Mood" },
-    { value: "freetext", label: "Free text" },
-    { value: "appointments", label: "Appointments" },
-];
-
 type SectionItem = { type: string; order: number };
 type DataLoss = { type: string; pageCount: number };
+type AgendaData = { name: string; coverTheme: string | null; sections: SectionItem[] };
 
-function labelFor(type: string) {
-    return SECTION_TYPES.find((t) => t.value === type)?.label ?? type;
+function keyOf(sections: SectionItem[]) {
+    return sections.map((section) => section.type).join(",");
 }
 
 export default function StructurePage() {
     const params = useParams<{ id: string }>();
     const router = useRouter();
     const [sections, setSections] = useState<SectionItem[]>([]);
+    const [initialKey, setInitialKey] = useState<string | null>(null);
+    const [name, setName] = useState("");
     const [coverColor, setCoverColor] = useState(DEFAULT_COVER_THEME.color);
     const [status, setStatus] = useState<LoadStatus>("loading");
     const [attempt, setAttempt] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const { pending, submit } = useSubmit(setError);
     const [pendingLoss, setPendingLoss] = useState<DataLoss[] | null>(null);
+    const [confirmingLeave, setConfirmingLeave] = useState(false);
+
+    const dirty = initialKey !== null && keyOf(sections) !== initialKey;
+    const firstSetup = initialKey === "";
+    const agendaHref = `/agendas/${params.id}`;
 
     useEffect(() => {
         let cancelled = false;
-        loadJson<{ sections: SectionItem[]; coverTheme: string | null }>(`/api/agendas/${params.id}`).then((result) => {
+        loadJson<AgendaData>(`/api/agendas/${params.id}`).then((result) => {
             if (cancelled) return;
             if (result.kind === "ok") {
                 setSections(result.data.sections);
+                setInitialKey(keyOf(result.data.sections));
+                setName(result.data.name);
                 setCoverColor(parseCoverTheme(result.data.coverTheme).color);
             }
             setStatus(result.kind);
@@ -53,6 +59,13 @@ export default function StructurePage() {
         };
     }, [params.id, attempt]);
 
+    useEffect(() => {
+        if (!dirty) return;
+        const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+        window.addEventListener("beforeunload", warn);
+        return () => window.removeEventListener("beforeunload", warn);
+    }, [dirty]);
+
     function retryLoading() {
         setStatus("loading");
         setAttempt((current) => current + 1);
@@ -61,6 +74,7 @@ export default function StructurePage() {
     function changeSections(next: SectionItem[]) {
         setSections(next);
         setPendingLoss(null);
+        setConfirmingLeave(false);
     }
 
     function addSection(type: string) {
@@ -94,10 +108,10 @@ export default function StructurePage() {
                 return false;
             }
             if (!res.ok) {
-                setError("Could not save structure");
+                setError("Could not save the layout. Try again in a moment.");
                 return false;
             }
-            router.push(`/agendas/${params.id}`);
+            router.push(agendaHref);
             return true;
         });
     }
@@ -112,114 +126,58 @@ export default function StructurePage() {
     }
     if (status === "not-found") return <p className="p-8">Agenda not found</p>;
 
-    const activeTypes = new Set(sections.map((s) => s.type));
+    const activeTypes = sections.map((section) => section.type);
+    const intro = (
+        <div className="flex flex-col gap-3">
+            <h1 className="font-hand text-4xl leading-tight text-ink">{firstSetup ? "Set up your pages" : "Edit your pages"}</h1>
+            <p className="text-ink-soft">
+                This layout is used for every page of <strong className="font-semibold text-ink">{name}</strong>.
+            </p>
+        </div>
+    );
 
     return (
-        <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-8">
-            <h1 className="text-2xl font-bold">Page structure</h1>
-            <div className="grid gap-6 md:grid-cols-2">
-                <Card className="flex flex-col gap-5 self-start">
-                    {error && (
-                        <p role="alert" className="text-sm text-danger">
-                            {error}
-                        </p>
-                    )}
-
-                    <div className="flex flex-col gap-2">
-                        <h2 className="text-sm font-bold">Available sections</h2>
-                        <div className="flex flex-wrap gap-2">
-                            {SECTION_TYPES.filter((t) => !activeTypes.has(t.value)).map((t) => (
-                                <Button key={t.value} variant="secondary" size="sm" onClick={() => addSection(t.value)}>
-                                    + {t.label}
-                                </Button>
-                            ))}
-                            {activeTypes.size === SECTION_TYPES.length && (
-                                <p className="text-sm text-ink-soft">All sections are in use</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        <h2 className="text-sm font-bold">Active sections</h2>
-                        {sections.length === 0 && <p className="text-sm text-ink-soft">No sections yet</p>}
-                        <ul className="flex flex-col gap-2">
-                            {sections.map((s, i) => (
-                                <li
-                                    key={s.type}
-                                    className="flex items-center justify-between rounded-xl border bg-paper px-3 py-2"
-                                >
-                                    <span className="font-semibold">{labelFor(s.type)}</span>
-                                    <div className="flex gap-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            aria-label={`Move ${labelFor(s.type)} up`}
-                                            onClick={() => moveSection(i, -1)}
-                                            disabled={i === 0}
-                                        >
-                                            ↑
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            aria-label={`Move ${labelFor(s.type)} down`}
-                                            onClick={() => moveSection(i, 1)}
-                                            disabled={i === sections.length - 1}
-                                        >
-                                            ↓
-                                        </Button>
-                                        <Button
-                                            variant="dangerGhost"
-                                            size="sm"
-                                            aria-label={`Remove ${labelFor(s.type)}`}
-                                            onClick={() => removeSection(s.type)}
-                                        >
-                                            ✕
-                                        </Button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {pendingLoss && (
-                        <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-danger bg-sheet p-4">
-                            <p className="text-sm font-semibold">
-                                These sections contain data that will be permanently deleted:
-                            </p>
-                            <ul className="text-sm">
-                                {pendingLoss.map((loss) => (
-                                    <li key={loss.type}>
-                                        {labelFor(loss.type)}: {loss.pageCount} {loss.pageCount === 1 ? "page" : "pages"}
-                                    </li>
-                                ))}
-                            </ul>
-                            <div className="flex gap-2">
-                                <Button variant="danger" onClick={() => save(true)} disabled={pending}>
-                                    Delete and save
-                                </Button>
-                                <Button variant="secondary" onClick={() => setPendingLoss(null)}>
-                                    Keep editing
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex items-center gap-4">
-                        <Button onClick={() => save(false)} disabled={sections.length === 0 || pending}>
-                            Confirm
-                        </Button>
-                        <TextLink href={`/agendas/${params.id}`} className="text-sm">
-                            Back to agenda
-                        </TextLink>
-                    </div>
-                </Card>
-
-                <section aria-label="Preview" className="flex flex-col gap-2 md:sticky md:top-8 md:self-start">
-                    <h2 className="text-sm font-bold">Preview</h2>
-                    <StructurePreview sections={sections} coverColor={coverColor} />
-                </section>
+        <BookSpread
+            backHref={agendaHref}
+            backLabel="Back to the agenda"
+            bindingColor={coverColor}
+            onBack={(event) => {
+                if (!dirty) return;
+                event.preventDefault();
+                setConfirmingLeave(true);
+            }}
+            left={
+                <div className="flex w-full max-w-sm flex-col gap-6 md:sticky md:top-10">
+                    {intro}
+                    <SectionPalette layout="stack" activeTypes={activeTypes} onAdd={addSection} />
+                </div>
+            }
+            mobileIntro={
+                <div className="flex flex-col gap-6">
+                    {intro}
+                    <SectionPalette layout="row" activeTypes={activeTypes} onAdd={addSection} />
+                </div>
+            }
+        >
+            <RiseIn index={0}>
+                <h2 className="font-hand text-2xl leading-8 text-ink">Sample page</h2>
+            </RiseIn>
+            <PageComposer sections={sections} onMove={moveSection} onRemove={removeSection} />
+            <div className="flex flex-col gap-3">
+                {pendingLoss && (
+                    <DataLossNotice
+                        losses={pendingLoss.map((loss) => ({ label: sectionInfo(loss.type).label, pageCount: loss.pageCount }))}
+                        pending={pending}
+                        onKeep={() => setPendingLoss(null)}
+                        onConfirm={() => save(true)}
+                    />
+                )}
+                {confirmingLeave && <LeaveNotice leaveHref={agendaHref} onKeep={() => setConfirmingLeave(false)} />}
+                <FormMessage message={error} />
+                <CrayonButton type="button" pending={pending} disabled={sections.length === 0} onClick={() => save(false)}>
+                    {pending ? "Saving…" : firstSetup ? "Start writing" : "Save layout"}
+                </CrayonButton>
             </div>
-        </main>
+        </BookSpread>
     );
 }

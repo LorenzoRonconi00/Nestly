@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { ArrowLeftIcon } from "@/components/ui/icons";
 
 const SHEET_SHADOW = "md:shadow-[0_24px_48px_-16px_rgba(74,59,54,0.28)]";
@@ -10,6 +10,8 @@ type Props = {
     corner?: ReactNode;
     backHref?: string;
     backLabel?: string;
+    onBack?: (event: MouseEvent<HTMLAnchorElement>) => void;
+    bindingColor?: string;
     children: ReactNode;
 };
 
@@ -19,11 +21,13 @@ export function BookSpread({
     corner,
     backHref = "/",
     backLabel = "Back to home",
+    onBack,
+    bindingColor,
     children,
 }: Readonly<Props>) {
     return (
         <main className="paper-grain flex min-h-dvh justify-center bg-paper md:items-center md:px-8 md:py-10">
-            <div className="relative grid w-full max-w-5xl md:grid-cols-2">
+            <div className="relative grid w-full max-w-5xl grid-cols-1 md:grid-cols-2">
                 <section
                     className={`sheet-left relative hidden flex-col items-center justify-center gap-4 rounded-l-4xl bg-sheet px-12 py-16 md:flex ${SHEET_SHADOW}`}
                 >
@@ -34,7 +38,10 @@ export function BookSpread({
                     aria-hidden="true"
                     className="binding-fade pointer-events-none absolute inset-y-0 left-1/2 z-10 hidden w-7 -translate-x-1/2 md:block"
                 >
-                    <span className="absolute inset-0 bg-crayon-pink [filter:url(#crayon)]" />
+                    <span
+                        className="absolute inset-0 bg-crayon-pink [filter:url(#crayon)]"
+                        style={bindingColor ? { backgroundColor: bindingColor } : undefined}
+                    />
                     <span className="absolute inset-0 flex flex-col justify-around py-20">
                         {["top", "middle", "bottom"].map((ring) => (
                             <span key={ring} className="block h-4 w-9 -translate-x-1 rounded-full border-[3px] border-ink-soft bg-paper" />
@@ -52,6 +59,7 @@ export function BookSpread({
                             <Link
                                 href={backHref}
                                 aria-label={backLabel}
+                                onClick={onBack}
                                 className="absolute top-0 -left-2 grid size-11 place-items-center rounded-full text-ink-soft transition-[transform,background-color] duration-150 ease-out hover:bg-accent-soft active:scale-95 motion-reduce:transition-none"
                             >
                                 <ArrowLeftIcon className="size-6" />

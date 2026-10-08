@@ -163,3 +163,73 @@ export function PencilIcon(props: SVGProps<SVGSVGElement>) {
         </Icon>
     );
 }
+
+
+export function ArrowUpIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M12 19.4c.1-4.6.1-9.1 0-13.8" />
+            <path d="M6.4 10.6 12 4.8l5.6 5.8" />
+        </Icon>
+    );
+}
+
+export function ArrowDownIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M12 4.6c-.1 4.6-.1 9.1 0 13.8" />
+            <path d="M6.4 13.4 12 19.2l5.6-5.8" />
+        </Icon>
+    );
+}
+
+export function CloseIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M5.4 5.6c4.6 4.2 8.8 8.4 13.2 12.8" />
+            <path d="M18.6 5.4C14.4 10 10 14.2 5.4 18.6" />
+        </Icon>
+    );
+}
+
+export function ChecklistIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="m4.4 6.6 1.7 1.8 2.9-3.4" />
+            <path d="M11.8 6.8c2.5-.2 5.1-.2 7.8 0" />
+            <path d="M4.8 12.6c1.2-.2 2.4-.2 3.6 0 .1 1.2.1 2.3 0 3.5-1.2.2-2.4.2-3.6 0-.2-1.2-.2-2.3 0-3.5Z" />
+            <path d="M11.8 14.4c2.5-.2 5.1-.2 7.8 0" />
+            <path d="M11.8 19.4c2.5-.2 5.1-.2 7.8 0" />
+        </Icon>
+    );
+}
+
+export function ClockIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M12 3.8c4.6-.1 8.3 3.6 8.4 8.2.1 4.6-3.6 8.4-8.2 8.4-4.6.1-8.4-3.6-8.5-8.2C3.6 7.6 7.4 3.9 12 3.8Z" />
+            <path d="M12 7.8v4.6l3 1.8" />
+        </Icon>
+    );
+}
+
+export function WalletIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M4.4 7.8c5.2-.6 10.3-.6 15.2 0 .3 3.8.3 7.6 0 11.4-5 .5-10.1.5-15.2 0-.3-3.8-.3-7.6 0-11.4Z" />
+            <path d="M5.6 7.6 14.4 4.8" />
+            <path d="M15.2 12.2c1.6-.2 3.2-.2 4.6 0 .1 1 .1 2 0 3-1.4.2-3 .2-4.6 0-.1-1-.1-2 0-3Z" />
+        </Icon>
+    );
+}
+
+export function SmileIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M12 3.4c4.8-.1 8.5 3.6 8.6 8.4.1 4.8-3.7 8.7-8.5 8.7-4.9 0-8.6-3.7-8.6-8.5 0-4.8 3.7-8.6 8.5-8.6Z" />
+            <path d="M9 9.6v.2" />
+            <path d="M15 9.6v.2" />
+            <path d="M8.4 14c1.9 2.4 5.4 2.5 7.3.1" />
+        </Icon>
+    );
+}
