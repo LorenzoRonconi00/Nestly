@@ -102,6 +102,16 @@ describe("authFetch", () => {
         expect(target.searchParams.has("reason")).toBe(false);
     });
 
+    it("goes to the plain login page, without a return address, when the user was on the home page", async () => {
+        window.history.replaceState({}, "", "/");
+        fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
+
+        await expect(authFetch("/api/auth/me")).rejects.toBeInstanceOf(SessionExpiredError);
+
+        expect(redirectTo).toHaveBeenCalledWith("/login");
+    });
+
+
     it("does not redirect when redirecting is switched off", async () => {
         fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
 

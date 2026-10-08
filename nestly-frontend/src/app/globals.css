@@ -16,6 +16,15 @@
   --color-focus: #c8624a;
   --color-pencil: #f7d794;
   --color-wood: #f3dcc0;
+  --color-crayon-pink: #f4b6c2;
+  --color-crayon-peach: #f9d5a7;
+  --color-crayon-yellow: #fdf0a6;
+  --color-crayon-green: #c7e8c0;
+  --color-crayon-blue: #a8d8ea;
+  --color-crayon-lilac: #c9c1f0;
+  --color-crayon-red: #e39a9a;
+  --color-twig: #b8906c;
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @theme inline {
@@ -25,6 +34,7 @@
 
 :root {
   color-scheme: light;
+  --motion-scale: 2;
 }
 
 @layer base {
@@ -45,6 +55,17 @@
   :focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
+  }
+
+
+  ::selection {
+    background: var(--color-crayon-pink);
+    color: var(--color-ink);
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-focus);
   }
 }
 
@@ -70,6 +91,92 @@ input:-webkit-autofill:focus {
   box-shadow: 0 0 0 1000px var(--color-sheet) inset;
   transition: background-color 9999s ease-out;
 }
+
+.paper-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.29 0 0 0 0 0.23 0 0 0 0 0.21 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes sheet-land-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+
+@keyframes sheet-land-right {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+
+@keyframes ribbon-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.sheet-left {
+  animation: sheet-land-left calc(380ms * var(--motion-scale)) var(--ease-out-strong) both;
+}
+
+.sheet-right {
+  animation: sheet-rise calc(380ms * var(--motion-scale)) var(--ease-out-strong) both;
+}
+
+@media (min-width: 768px) {
+  .sheet-right {
+    animation-name: sheet-land-right;
+  }
+}
+
+.binding-fade {
+  animation: fade-in calc(220ms * var(--motion-scale)) ease-out calc(140ms * var(--motion-scale)) both;
+}
+
+.ribbon-drop {
+  animation: ribbon-drop calc(280ms * var(--motion-scale)) var(--ease-out-strong) both;
+  animation-delay: calc((260ms + var(--i, 0) * 60ms) * var(--motion-scale));
+}
+
+.rise {
+  animation: rise calc(300ms * var(--motion-scale)) var(--ease-out-strong) both;
+  animation-delay: calc(var(--i, 0) * 40ms * var(--motion-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .sheet-left,
+  .sheet-right,
+  .ribbon-drop,
+  .rise {
+    animation: fade-in 160ms ease-out both;
+    animation-delay: 0ms;
+  }
+}
+
+
 
 .sheet-lines {
   background-image: repeating-linear-gradient(to bottom,

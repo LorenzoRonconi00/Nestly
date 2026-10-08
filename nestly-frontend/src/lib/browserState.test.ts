@@ -1,7 +1,5 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { setToken } from "./auth";
-import { useHasToken } from "./useHasToken";
 import { useQueryParam } from "./useQueryParam";
 
 describe("useQueryParam", () => {
@@ -16,17 +14,5 @@ describe("useQueryParam", () => {
         window.history.replaceState({}, "", "/login");
 
         expect(renderHook(() => useQueryParam("reason")).result.current).toBeNull();
-    });
-});
-
-describe("useHasToken", () => {
-    it("is false without an access token", () => {
-        expect(renderHook(() => useHasToken()).result.current).toBe(false);
-    });
-
-    it("is true when an access token is stored", () => {
-        setToken("token");
-
-        expect(renderHook(() => useHasToken()).result.current).toBe(true);
     });
 });

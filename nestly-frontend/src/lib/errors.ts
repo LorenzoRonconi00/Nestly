@@ -1,9 +1,12 @@
-type ValidationBody = { errors?: { message?: string }[] };
+export type Violation = { field: string; message: string };
 
-export async function firstValidationMessage(res: Response): Promise<string | null> {
+type ValidationBody = { errors?: { field?: string; message?: string }[] };
+
+export async function firstViolation(res: Response): Promise<Violation | null> {
     try {
         const body: ValidationBody = await res.json();
-        return body.errors?.[0]?.message ?? null;
+        const first = body.errors?.[0];
+        return first?.message ? { field: first.field ?? "", message: first.message } : null;
     } catch {
         return null;
     }

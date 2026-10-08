@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito, Patrick_Hand } from "next/font/google";
 import "./globals.css";
 import { OpeningProvider } from "@/components/opening/OpeningProvider";
+import { CrayonFilters } from "@/components/ui/CrayonFilters";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${nunito.variable} ${patrickHand.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
+        <CrayonFilters />
         <OpeningProvider>{children}</OpeningProvider>
       </body>
     </html>
