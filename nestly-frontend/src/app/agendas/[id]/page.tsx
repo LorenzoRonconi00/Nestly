@@ -3,20 +3,29 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { authFetch } from "@/lib/api";
-import { todayLocal } from "@/lib/date";
-import { CoverColorPicker } from "@/components/cover/CoverColorPicker";
-import { CoverViewer } from "@/components/cover/CoverViewer";
+import { CoverColorSwatches } from "@/components/agenda/CoverColorSwatches";
+import { DeleteAgendaNotice } from "@/components/agenda/DeleteAgendaNotice";
+import { templateFor } from "@/components/agenda/templates";
+import { RiseIn } from "@/components/auth/RiseIn";
 import type { CoverTimeline } from "@/components/cover/Cover3D";
-import { DeleteAgendaPanel } from "@/components/DeleteAgendaPanel";
+import { CoverViewer } from "@/components/cover/CoverViewer";
 import { LoadError } from "@/components/LoadError";
 import { useOpening } from "@/components/opening/OpeningProvider";
-import { Button, buttonClassName } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { TextInput } from "@/components/ui/TextInput";
+import { sectionInfo } from "@/components/structure/sectionTypes";
+import { BookSpread } from "@/components/ui/BookSpread";
+import { CrayonButton } from "@/components/ui/CrayonButton";
+import { CrayonLink } from "@/components/ui/CrayonLink";
+import { Field } from "@/components/ui/Field";
+import { FormMessage } from "@/components/ui/FormMessage";
+import { LayoutIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { TextLink } from "@/components/ui/TextLink";
+import { TEXT_BUTTON_CLASS } from "@/components/ui/textButton";
+import { authFetch } from "@/lib/api";
 import { parseCoverTheme, serializeCoverTheme } from "@/lib/coverTheme";
+import { todayLocal } from "@/lib/date";
 import { loadJson, type LoadStatus } from "@/lib/loadJson";
+import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useRestoreFocus } from "@/lib/useRestoreFocus";
 import { useSubmit } from "@/lib/useSubmit";
 
 type Agenda = {
@@ -27,12 +36,18 @@ type Agenda = {
     coverTheme: string | null;
 };
 
+const ACTION =
+    "flex min-h-11 cursor-pointer items-center gap-2 font-hand text-xl text-ink transition-colors duration-150 hover:text-ink-soft motion-reduce:transition-none";
+
 export default function AgendaSummaryPage() {
     const params = useParams<{ id: string }>();
     const router = useRouter();
     const { startOpening } = useOpening();
     const timelineRef = useRef<CoverTimeline | null>(null);
     const coverBoxRef = useRef<HTMLDivElement>(null);
+    const editButtonRef = useRef<HTMLButtonElement>(null);
+    const deleteButtonRef = useRef<HTMLButtonElement>(null);
+    const wide = useMediaQuery("(min-width: 768px)", false);
     const [agenda, setAgenda] = useState<Agenda | null>(null);
     const [status, setStatus] = useState<LoadStatus>("loading");
     const [attempt, setAttempt] = useState(0);
@@ -42,6 +57,9 @@ export default function AgendaSummaryPage() {
     const [draftColor, setDraftColor] = useState("");
     const [error, setError] = useState<string | null>(null);
     const { pending, submit } = useSubmit(setError);
+
+    useRestoreFocus(editing, editButtonRef);
+    useRestoreFocus(confirmingDelete, deleteButtonRef);
 
     useEffect(() => {
         let cancelled = false;
@@ -127,83 +145,132 @@ export default function AgendaSummaryPage() {
     }
     if (!agenda) return <p className="p-8">Agenda not found</p>;
 
-    const openHref =
-        agenda.baseTemplate === "notebook"
-            ? `/agendas/${agenda.id}/book?page=1`
-            : `/agendas/${agenda.id}/book?date=${todayLocal()}`;
-    const coverTheme = editing ? { kind: "solid" as const, color: draftColor } : parseCoverTheme(agenda.coverTheme);
+    const isNotebook = agenda.baseTemplate === "notebook";
+    const openHref = isNotebook ? `/agendas/${agenda.id}/book?page=1` : `/agendas/${agenda.id}/book?date=${todayLocal()}`;
+    const savedTheme = parseCoverTheme(agenda.coverTheme);
+    const coverTheme = editing ? { kind: "solid" as const, color: draftColor } : savedTheme;
+    const template = templateFor(agenda.baseTemplate);
+    const sections = [...agenda.sections].sort((a, b) => a.order - b.order);
+    const structureHref = `/agendas/${agenda.id}/structure`;
+
+    const cover = (
+        <div ref={coverBoxRef} className="w-full max-w-sm">
+            <CoverViewer
+                theme={coverTheme}
+                className="h-64 w-full md:h-96"
+                onAnimationReady={(timeline) => {
+                    timelineRef.current = timeline;
+                }}
+            />
+        </div>
+    );
 
     return (
-        <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center gap-5 px-4 py-8">
-            <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-3xl font-extrabold">{agenda.name}</h1>
-                <span className="rounded-full border bg-sheet px-3 py-0.5 text-xs text-ink-soft">
-                    {agenda.baseTemplate}
-                </span>
-            </div>
-            <div ref={coverBoxRef} className="w-full">
-                <CoverViewer
-                    theme={coverTheme}
-                    onAnimationReady={(timeline) => {
-                        timelineRef.current = timeline;
-                    }}
-                />
-            </div>
-            {editing && (
-                <Card className="flex w-full flex-col gap-4">
-                    <h2 className="text-lg font-bold">Edit details</h2>
-                    <TextInput
-                        aria-label="Agenda name"
+        <BookSpread bindingColor={savedTheme.color} left={wide ? cover : null} mobileIntro={wide ? undefined : cover}>
+            <RiseIn index={0}>
+                <div className="flex flex-col gap-2">
+                    <p className="flex items-center gap-1.5 text-sm text-ink-soft">
+                        <template.Icon className="size-5 shrink-0" />
+                        {template.label}
+                    </p>
+                    <h1 className="font-hand text-4xl leading-tight wrap-anywhere text-ink">{agenda.name}</h1>
+                </div>
+            </RiseIn>
+
+            {editing ? (
+                <div className="rise-quick flex flex-col gap-4">
+                    <h2 className="font-hand text-2xl leading-8 text-ink">Edit details</h2>
+                    <Field
+                        label="Name"
+                        icon={PencilIcon}
                         value={draftName}
-                        onChange={(e) => setDraftName(e.target.value)}
+                        onChange={(event) => setDraftName(event.target.value)}
                         maxLength={255}
+                        autoComplete="off"
+                        autoFocus
                     />
-                    <CoverColorPicker value={draftColor} onChange={setDraftColor} />
-                    <div className="flex gap-2">
-                        <Button onClick={handleSave} disabled={draftName.trim() === "" || pending}>
-                            Save
-                        </Button>
-                        <Button variant="secondary" onClick={() => setEditing(false)}>
+                    <CoverColorSwatches value={draftColor} onChange={setDraftColor} />
+                    <FormMessage message={error} />
+                    <div className="flex flex-col items-start gap-3">
+                        <CrayonButton type="button" pending={pending} disabled={draftName.trim() === ""} onClick={handleSave}>
+                            Save changes
+                        </CrayonButton>
+                        <button type="button" onClick={() => setEditing(false)} className={TEXT_BUTTON_CLASS}>
                             Cancel
-                        </Button>
+                        </button>
                     </div>
-                </Card>
-            )}
-            <Link
-                href={openHref}
-                onClick={(event) => handleOpenClick(event, openHref)}
-                className={buttonClassName("primary")}
-            >
-                {agenda.baseTemplate === "notebook" ? "Open page 1" : "Open today's page"}
-            </Link>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-                <button
-                    type="button"
-                    onClick={startEditing}
-                    className="cursor-pointer text-ink underline decoration-accent-hover decoration-2 underline-offset-4 hover:text-ink-soft"
-                >
-                    Edit details
-                </button>
-                <TextLink href={`/agendas/${agenda.id}/structure`}>Edit structure</TextLink>
-                <TextLink href="/">Back to home</TextLink>
-            </div>
-            {error && (
-                <p role="alert" className="text-sm text-danger">
-                    {error}
-                </p>
-            )}
-            {confirmingDelete ? (
-                <DeleteAgendaPanel
-                    agendaName={agenda.name}
-                    pending={pending}
-                    onConfirm={handleDelete}
-                    onCancel={() => setConfirmingDelete(false)}
-                />
+                </div>
             ) : (
-                <Button variant="dangerGhost" size="sm" onClick={() => setConfirmingDelete(true)}>
-                    Delete agenda
-                </Button>
+                <>
+                    <RiseIn index={1}>
+                        <section aria-labelledby="inside-title" className="flex flex-col">
+                            <h2 id="inside-title" className="font-hand text-2xl leading-8 text-ink">
+                                Inside
+                            </h2>
+                            {sections.length === 0 ? (
+                                <p className="min-h-8 leading-8 text-ink-soft">
+                                    No sections yet. <TextLink href={structureHref}>Set up your pages</TextLink>
+                                </p>
+                            ) : (
+                                <ul>
+                                    {sections.map((section) => {
+                                        const info = sectionInfo(section.type);
+                                        return (
+                                            <li key={section.type} className="flex h-8 items-center gap-3 text-ink">
+                                                <info.Icon className="size-5 shrink-0 text-ink-soft" />
+                                                {info.label}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </section>
+                    </RiseIn>
+
+                    <RiseIn index={2}>
+                        <CrayonLink href={openHref} onClick={(event) => handleOpenClick(event, openHref)}>
+                            {isNotebook ? "Open page 1" : "Open today's page"}
+                        </CrayonLink>
+                    </RiseIn>
+
+                    <RiseIn index={3}>
+                        <div className="flex flex-wrap items-center gap-x-6">
+                            <button ref={editButtonRef} type="button" onClick={startEditing} className={ACTION}>
+                                <PencilIcon className="size-5" />
+                                Edit details
+                            </button>
+                            <Link href={structureHref} className={ACTION}>
+                                <LayoutIcon className="size-5" />
+                                Edit structure
+                            </Link>
+                        </div>
+                    </RiseIn>
+
+                    <RiseIn index={4}>
+                        <div className="flex flex-col gap-3">
+                            {confirmingDelete ? (
+                                <DeleteAgendaNotice
+                                    agendaName={agenda.name}
+                                    pending={pending}
+                                    onConfirm={handleDelete}
+                                    onCancel={() => setConfirmingDelete(false)}
+                                />
+                            ) : (
+                                <button
+                                    ref={deleteButtonRef}
+                                    type="button"
+                                    onClick={() => setConfirmingDelete(true)}
+                                    className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm text-danger underline decoration-1 underline-offset-4 hover:text-ink-soft"
+                                >
+                                    <TrashIcon className="size-5" />
+                                    Delete agenda
+                                </button>
+                            )}
+                            <FormMessage message={error} />
+                        </div>
+                    </RiseIn>
+                </>
             )}
-        </main>
+        </BookSpread>
     );
 }

@@ -233,3 +233,25 @@ export function SmileIcon(props: SVGProps<SVGSVGElement>) {
         </Icon>
     );
 }
+
+export function TrashIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M4.6 6.8c5-.4 9.8-.4 14.8 0" />
+            <path d="M9.4 6.6c0-1.2.4-2.2 1.3-2.6.9-.2 1.7-.2 2.6 0 .9.4 1.3 1.4 1.3 2.6" />
+            <path d="M6.4 7.2c.3 4.2.5 8.4.8 12.6 3.2.4 6.4.4 9.6 0 .3-4.2.5-8.4.8-12.6" />
+            <path d="M10.2 11v5.4" />
+            <path d="M13.8 11v5.4" />
+        </Icon>
+    );
+}
+
+export function LayoutIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M4.6 5.4c5-.4 9.8-.4 14.8 0 .4 4.4.4 8.8 0 13.2-5 .4-9.8.4-14.8 0-.4-4.4-.4-8.8 0-13.2Z" />
+            <path d="M4.8 10.2c4.8-.3 9.6-.3 14.4 0" />
+            <path d="M10.2 10.4c-.2 2.8-.2 5.4 0 8" />
+        </Icon>
+    );
+}

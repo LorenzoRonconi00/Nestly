@@ -2,9 +2,7 @@ import Link from "next/link";
 import { CrayonButton } from "@/components/ui/CrayonButton";
 import { CrayonFrame } from "@/components/ui/CrayonFrame";
 import { AlertIcon } from "@/components/ui/icons";
-
-const TEXT_BUTTON =
-    "cursor-pointer font-hand text-xl text-ink underline decoration-accent-hover decoration-2 underline-offset-4 hover:text-ink-soft";
+import { TEXT_BUTTON_CLASS } from "@/components/ui/textButton";
 
 type DataLossProps = {
     losses: { label: string; pageCount: number }[];
@@ -32,7 +30,7 @@ export function DataLossNotice({ losses, pending, onKeep, onConfirm }: Readonly<
                 <CrayonButton type="button" tone="danger" pending={pending} onClick={onConfirm}>
                     Delete and save
                 </CrayonButton>
-                <button type="button" onClick={onKeep} className={TEXT_BUTTON}>
+                <button type="button" onClick={onKeep} className={TEXT_BUTTON_CLASS}>
                     Keep editing
                 </button>
             </div>
@@ -51,10 +49,10 @@ export function LeaveNotice({ leaveHref, onKeep }: Readonly<LeaveProps>) {
                 You have changes that are not saved yet.
             </p>
             <div className="relative flex flex-wrap items-center gap-6">
-                <button type="button" onClick={onKeep} className={TEXT_BUTTON}>
+                <button type="button" onClick={onKeep} className={TEXT_BUTTON_CLASS}>
                     Keep editing
                 </button>
-                <Link href={leaveHref} className={TEXT_BUTTON}>
+                <Link href={leaveHref} className={TEXT_BUTTON_CLASS}>
                     Leave without saving
                 </Link>
             </div>
