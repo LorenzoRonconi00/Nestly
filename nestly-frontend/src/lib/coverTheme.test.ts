@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_COVER_THEME, parseCoverTheme, serializeCoverTheme } from "./coverTheme";
+import { avatarColor, COVER_COLOR_PRESETS, DEFAULT_COVER_THEME, parseCoverTheme, serializeCoverTheme } from "./coverTheme";
 
 describe("parseCoverTheme", () => {
     it("reads a valid solid theme", () => {
@@ -23,5 +23,17 @@ describe("serializeCoverTheme", () => {
 
         expect(serializeCoverTheme(theme)).toBe("solid:#c7e8c0");
         expect(parseCoverTheme(serializeCoverTheme(theme))).toEqual(theme);
+    });
+});
+
+describe("avatarColor", () => {
+    it("always gives the same colour to the same seed", () => {
+        expect(avatarColor("lollo@test.com")).toBe(avatarColor("lollo@test.com"));
+    });
+
+    it("picks one of the cover colours", () => {
+        for (const seed of ["a@b.com", "lollo@test.com", "", "ünïcode@example.org"]) {
+            expect(COVER_COLOR_PRESETS).toContain(avatarColor(seed));
+        }
     });
 });

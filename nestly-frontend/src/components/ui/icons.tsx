@@ -91,3 +91,57 @@ export function SpinnerIcon(props: SVGProps<SVGSVGElement>) {
         </Icon>
     );
 }
+
+
+export function PlusIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M12 4.6c.1 5 .1 9.8 0 14.8" />
+            <path d="M4.7 12.1c5-.2 9.9-.1 14.7 0" />
+        </Icon>
+    );
+}
+
+export function LogOutIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M10 4.4c-2.1-.2-4.2-.1-5.9.1-.2 5.1-.2 10.1 0 15.2 1.8.2 3.8.2 5.9 0" />
+            <path d="M10.4 12.1c3.3-.2 6.6-.1 9.6 0" />
+            <path d="m16.4 8.2 3.8 3.8-3.8 3.9" />
+        </Icon>
+    );
+}
+
+export function NotebookIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M6.4 3.8c4.1-.4 8.2-.3 11.6 0 .3 5.3.3 10.7 0 16.2-3.4.3-7.5.3-11.6 0-.3-5.4-.3-10.8 0-16.2Z" />
+            <path d="M3.9 7.6h3.2" />
+            <path d="M3.9 12h3.2" />
+            <path d="M3.9 16.4h3.2" />
+            <path d="M10.4 8.2h4.4" />
+            <path d="M10.4 12h4.4" />
+        </Icon>
+    );
+}
+
+export function CalendarIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M4.4 6.3c5.1-.5 10.2-.4 15.2 0 .4 4.3.4 8.8 0 13.2-5 .4-10.1.4-15.2 0-.4-4.4-.4-8.9 0-13.2Z" />
+            <path d="M4.6 10.4c5-.3 10.1-.3 14.8 0" />
+            <path d="M8.4 3.8v4.1" />
+            <path d="M15.6 3.8v4.1" />
+        </Icon>
+    );
+}
+
+export function BookIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M5.6 4c4.2-.3 8.4-.2 12.3.1.3 5.2.3 10.6 0 15.8-3.9.4-8.1.4-12.3 0-.4-5.3-.4-10.6 0-15.9Z" />
+            <path d="M8.4 4.2c.1 5.2.1 10.4 0 15.6" />
+            <path d="M14.2 4.1v6.2l1.6-1.5 1.7 1.5V4.2" />
+        </Icon>
+    );
+}

@@ -1,18 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
+import { AppBar } from "@/components/app/AppBar";
+import { NestIllustration } from "@/components/auth/NestIllustration";
+import { NewAgendaTile } from "@/components/home/NewAgendaTile";
+import { NotebookCover } from "@/components/home/NotebookCover";
+import { LoadError } from "@/components/LoadError";
 import { logout } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
+import { parseCoverTheme } from "@/lib/coverTheme";
 import { loadJson } from "@/lib/loadJson";
-import { Button, buttonClassName } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { LoadError } from "@/components/LoadError";
 
 type Me = { userId: string; email: string };
 
-type AgendaSummary = { id: string; name: string; baseTemplate: string };
+type AgendaSummary = { id: string; name: string; baseTemplate: string; coverTheme: string | null };
+
+const MAX_STAGGERED = 7;
+
+function stagger(index: number): CSSProperties {
+  return { "--i": Math.min(index, MAX_STAGGERED) } as CSSProperties;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -76,42 +84,41 @@ export default function Home() {
   if (!me) return null;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-4 py-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-4xl font-extrabold">Nestly</h1>
-        <p className="text-sm text-ink-soft">Logged in as {me.email}</p>
-      </header>
+    <div className="paper-grain min-h-dvh bg-paper">
+      <AppBar email={me.email} onLogout={handleLogout} />
+      <main className="mx-auto w-full max-w-5xl px-6 pt-4 pb-20 md:px-10">
+        <h1 className="font-hand text-4xl leading-tight text-ink md:text-5xl">Your agendas</h1>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">Your agendas</h2>
         {agendasFailed && <LoadError onRetry={retryLoading} />}
-        {agendas?.length === 0 && <p className="text-sm text-ink-soft">No agendas yet</p>}
+
+        {agendas?.length === 0 && (
+          <div className="mt-10 flex flex-col items-center gap-6 text-center">
+            <NestIllustration className="w-48" />
+            <p className="font-hand text-3xl leading-tight text-ink">Let&apos;s start your first agenda.</p>
+            <div className="w-40">
+              <NewAgendaTile />
+            </div>
+          </div>
+        )}
+
         {agendas && agendas.length > 0 && (
-          <ul className="flex flex-col">
-            {agendas.map((agenda) => (
-              <li key={agenda.id}>
-                <Link
-                  href={`/agendas/${agenda.id}`}
-                  className="flex items-center justify-between gap-4 rounded-xl px-3 py-2 hover:bg-accent-soft"
-                >
-                  <span className="font-semibold">{agenda.name}</span>
-                  <span className="rounded-full border bg-paper px-2 py-0.5 text-xs text-ink-soft">
-                    {agenda.baseTemplate}
-                  </span>
-                </Link>
+          <ul className="mt-8 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
+            {agendas.map((agenda, index) => (
+              <li key={agenda.id} className="rise-quick" style={stagger(index)}>
+                <NotebookCover
+                  id={agenda.id}
+                  name={agenda.name}
+                  baseTemplate={agenda.baseTemplate}
+                  color={parseCoverTheme(agenda.coverTheme).color}
+                />
               </li>
             ))}
+            <li className="rise-quick" style={stagger(agendas.length)}>
+              <NewAgendaTile />
+            </li>
           </ul>
         )}
-      </Card>
-      <div className="flex gap-3">
-        <Link href="/agendas/new" className={buttonClassName("primary")}>
-          New agenda
-        </Link>
-        <Button variant="ghost" onClick={handleLogout}>
-          Logout
-        </Button>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

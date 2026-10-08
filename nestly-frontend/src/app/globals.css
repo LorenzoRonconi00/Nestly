@@ -137,6 +137,18 @@ input:-webkit-autofill:focus {
   }
 }
 
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+}
+
+.pop-in {
+  animation: pop-in 150ms var(--ease-out-strong) both;
+}
+
+
 .sheet-left {
   animation: sheet-land-left calc(380ms * var(--motion-scale)) var(--ease-out-strong) both;
 }
@@ -165,11 +177,19 @@ input:-webkit-autofill:focus {
   animation-delay: calc(var(--i, 0) * 40ms * var(--motion-scale));
 }
 
+
+.rise-quick {
+  animation: rise 240ms var(--ease-out-strong) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   .sheet-left,
   .sheet-right,
   .ribbon-drop,
+  .rise-quick,
+  .pop-in, 
   .rise {
     animation: fade-in 160ms ease-out both;
     animation-delay: 0ms;

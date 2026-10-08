@@ -21,3 +21,9 @@ export const COVER_COLOR_PRESETS = [
     "#e8c7e6",
     "#e0d6cc",
 ];
+
+export function avatarColor(seed: string): string {
+    let hash = 0;
+    for (const char of seed) hash = (hash * 31 + char.codePointAt(0)!) >>> 0;
+    return COVER_COLOR_PRESETS[hash % COVER_COLOR_PRESETS.length];
+}
