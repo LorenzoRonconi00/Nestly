@@ -145,3 +145,21 @@ export function BookIcon(props: SVGProps<SVGSVGElement>) {
         </Icon>
     );
 }
+
+
+export function CheckIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M4.6 12.4c2.2 2.4 3.9 4.2 5.4 6.1C13.2 13.2 16.6 8.6 19.6 5.2" />
+        </Icon>
+    );
+}
+
+export function PencilIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M4.4 19.6l.9-4.3L16.2 4.4c.9-.8 2.2-.7 3 .2.9.8.9 2.1.1 3L8.5 18.7l-4.1.9Z" />
+            <path d="M14.2 6.4l3.4 3.4" />
+        </Icon>
+    );
+}

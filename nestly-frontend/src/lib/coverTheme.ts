@@ -11,16 +11,18 @@ export function serializeCoverTheme(theme: CoverTheme): string {
     return `solid:${theme.color}`;
 }
 
-export const COVER_COLOR_PRESETS = [
-    "#f4b6c2",
-    "#f9d5a7",
-    "#fdf0a6",
-    "#c7e8c0",
-    "#a8d8ea",
-    "#c9c1f0",
-    "#e8c7e6",
-    "#e0d6cc",
+export const COVER_COLORS = [
+    { name: "Pink", color: "#f4b6c2" },
+    { name: "Peach", color: "#f9d5a7" },
+    { name: "Yellow", color: "#fdf0a6" },
+    { name: "Green", color: "#c7e8c0" },
+    { name: "Blue", color: "#a8d8ea" },
+    { name: "Lilac", color: "#c9c1f0" },
+    { name: "Mauve", color: "#e8c7e6" },
+    { name: "Sand", color: "#e0d6cc" },
 ];
+
+export const COVER_COLOR_PRESETS = COVER_COLORS.map((entry) => entry.color);
 
 export function avatarColor(seed: string): string {
     let hash = 0;
