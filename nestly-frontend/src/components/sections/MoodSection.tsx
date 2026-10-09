@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { MoodFace } from "@/components/sections/MoodFace";
+import { SectionHeading } from "@/components/sections/SectionHeading";
 import { useAutosave } from "@/lib/useAutosave";
 
 const MOODS = [1, 2, 3, 4, 5];
@@ -16,9 +18,9 @@ export function MoodSection({ initialData, onSave }: Readonly<Props>) {
     return (
         <section>
             <div className="flex h-8 items-center">
-                <h2 className="text-xs font-bold tracking-wider text-ink-soft uppercase">Mood</h2>
+                <SectionHeading type="mood" />
             </div>
-            <div role="group" aria-label="Mood" className="flex h-8 gap-2">
+            <div role="group" aria-label="Mood" className="flex h-8 items-center gap-1">
                 {MOODS.map((m) => (
                     <button
                         key={m}
@@ -26,12 +28,11 @@ export function MoodSection({ initialData, onSave }: Readonly<Props>) {
                         aria-pressed={value === m}
                         aria-label={`Mood ${m} of ${MOODS.length}`}
                         onClick={() => setValue(m)}
-                        className={`h-8 w-8 cursor-pointer rounded-full border text-sm font-semibold transition-colors ${value === m
-                                ? "border-ink bg-accent text-ink"
-                                : "border-border-strong bg-sheet text-ink hover:bg-accent-soft"
-                            }`}
+                        className={`-my-1.5 -ml-1 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-[transform,background-color,color] duration-150 ease-out-strong active:scale-95 motion-reduce:transition-none ${
+                            value === m ? "bg-accent text-ink" : "text-ink-soft hover:bg-accent-soft hover:text-ink"
+                        }`}
                     >
-                        {m}
+                        <MoodFace level={m} />
                     </button>
                 ))}
             </div>

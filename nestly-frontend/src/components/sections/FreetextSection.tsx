@@ -20,7 +20,7 @@ export function FreetextSection({ initialData, onSave }: Readonly<Props>) {
 
     return (
         <ConfirmableSection
-            title="Free text"
+            type="freetext"
             confirmed={confirmed}
             onConfirm={() => setConfirmed(true)}
             onEdit={() => setConfirmed(false)}
@@ -35,8 +35,9 @@ export function FreetextSection({ initialData, onSave }: Readonly<Props>) {
                     onChange={(e) => setText(e.target.value)}
                     rows={4}
                     aria-label="Free text"
+                    placeholder="Write about your day…"
                     maxLength={MAX_FREETEXT_LENGTH}
-                    className="written field-sizing-content w-full resize-none bg-transparent"
+                    className="written field-sizing-content w-full resize-none rounded-t-md bg-transparent px-1 transition-[background-color] duration-150 ease-out placeholder:text-ink-soft focus:bg-accent-soft/60 motion-reduce:transition-none"
                 />
             )}
         </ConfirmableSection>

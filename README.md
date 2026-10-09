@@ -35,13 +35,14 @@ Nestly is a full-stack web application for keeping a personal agenda, diary or n
 
 **Page structure**
 - Five section types: free text, checklist, expenses, appointments, mood.
-- Add, remove and reorder sections with a **live page preview**.
+- Compose the page directly: pick sections from a palette, then reorder or remove them on a sample page that shows what each section will look like. Leaving with unsaved changes asks for confirmation.
 - Changes are **retroactive**: every existing page is brought in line with the new structure, and removing a section that holds data requires explicit, server-enforced confirmation.
 
 **The book**
 - Two-page spread (single page on small screens) inside a frame tinted with the cover colour.
 - A real **3D page flip** around the binding, with perspective, shading and prefetching of neighbouring spreads.
-- Jump to any date with a month calendar (days with content are marked), to any page number in notebooks, or with the keyboard (`←` / `→`).
+- A collapsible **sidebar** with a vertical list of the month's days (days with writing are marked) or, in notebooks, a list of pages with a "go to page" field. It sits beside the book on wide screens and remembers whether it was open; on narrower screens it opens over the book. Big arrows on either side turn the page, and the keyboard (`←` / `→`) works too.
+- A search icon opens full-text search; a bell icon mutes the writing sound.
 - Opening animation: the cover swings open, a glow fills the screen, and the page is revealed. Click or `Esc` skips it.
 
 **Writing**
@@ -59,7 +60,7 @@ Nestly is a full-stack web application for keeping a personal agenda, diary or n
 **Accessibility and resilience**
 - `prefers-reduced-motion` is honoured (no flip, glow, pencil or sound).
 - A 2D cover fallback when WebGL is unavailable.
-- Keyboard-reachable controls with visible focus, labelled icon buttons, and text contrast checked against WCAG AA (known exceptions are listed under [Known limitations](#known-limitations)).
+- Keyboard-reachable controls with visible focus, labelled icon buttons with 44 px touch targets, focus returned to the control that opened a panel, and text contrast checked against WCAG AA (known exceptions are listed under [Known limitations](#known-limitations)).
 - Loading and save failures are reported with a message and a retry instead of a blank screen; forms show a pending state and cannot be submitted twice.
 
 ---
@@ -117,7 +118,7 @@ A layered architecture with DTOs kept separate from entities:
 - **App Router** pages for the home list, authentication, agenda creation, summary, structure editor, and the book (`/agendas/{id}/book?date=…` or `?page=…`).
 - **The book** is a single mounted component: spreads are fetched in ranges, neighbouring spreads are prefetched, and a GSAP timeline turns a leaf made of a live front page and a back face, so edits in progress are never lost during a flip.
 - **Authentication client:** `authFetch` attaches the access token, renews it once on `401` using a Web Lock so concurrent requests and tabs share a single refresh, and falls back to the login page (keeping unsaved drafts) when the session is gone.
-- **Design system:** semantic Tailwind tokens (`paper`, `ink`, `accent`…), Nunito for the interface, Patrick Hand for handwriting, one light, pastel theme.
+- **Design system:** semantic Tailwind tokens (`paper`, `ink`, `accent`…), Nunito for the interface, Patrick Hand for handwriting and headings, one light pastel theme. The hand-drawn look comes from SVG filters (`#crayon`, `#crayon-soft`: turbulence, displacement and a grain mask) applied to frames, buttons, covers and bindings, plus a paper-grain background and ruled sheets. The shared pieces live in `components/ui` (`BookSpread`, `CrayonButton`, `CrayonLink`, `Field`, `IconButton`, `LineInput`…); motion is scaled by one CSS variable and reduced to a fade under `prefers-reduced-motion`.
 
 ---
 
@@ -231,7 +232,7 @@ Validation failures answer `400` with `{"errors": [{"field": "...", "message": "
 cd nestly-backend
 ./mvnw test
 
-# Frontend: 72 unit and component tests, linting and type-checking
+# Frontend: 79 unit and component tests, linting and type-checking
 cd nestly-frontend
 npm test
 npm run lint
@@ -268,7 +269,7 @@ nestly/
     ├── public/sounds/          Pencil sound and its licence
     └── src/
         ├── app/                Routes (home, auth, agendas, structure, book)
-        ├── components/         ui, cover, spread, sections, handwriting, opening, structure
+        ├── components/         ui, app, auth, home, agenda, book, structure, cover, spread, sections, handwriting, opening
         └── lib/                API client, auth, dates, autosave, search, hooks
 ```
 
@@ -287,6 +288,8 @@ nestly/
 | Two-page spread with a rigid 3D leaf | Real page turning that keeps editable content, instead of a curl library built for static content |
 | Retroactive structure changes | Every page always matches the current template; removing populated sections requires confirmation |
 | One light theme | A single, coherent pastel identity on every device; no dark mode by design |
+| Hand-drawn look with SVG filters | One shared set of filters gives frames, buttons and covers a crayon edge without image assets; the cost is some rendering work, so filters are not applied inside the 3D page leaf |
+| Sidebar docked from 1280 px, overlay below | The book keeps enough width for two pages; the choice is remembered only where the sidebar sits beside the book |
 | No secrets in code | The application never falls back to a built-in secret or credential: a forgotten setting stops the startup instead of running with a publicly known value. The cost is one `cp .env.example .env` on first run |
 | Fixed input limits | Pages 1 to 10,000 per notebook, dates 1900-01-01 to 2200-12-31, at most 100 entries per list section, 500 characters per entry and 50,000 characters of free text. They are constants in code, not configuration: simple and testable. The frontend repeats them (`sectionLimits.ts`) only to avoid saves that the server would reject |
 | Strict validation of section data | Every save is checked against the section type (known fields, types, sizes), which keeps the JSONB column flexible without storing garbage or oversized data. Adding a section type means adding its rules to `SectionDataValidator` |
@@ -304,14 +307,16 @@ nestly/
 - Only solid-colour cover themes are available.
 - **No rate limiting** on the authentication endpoints (a deliberate choice for now); registering with an existing email answers `409`, which reveals that the account exists.
 - Unsaved typing can be lost if the tab is closed within the autosave delay (about 0.8 seconds).
-- Mood is a 1 to 5 numeric scale (not emoji or a slider), sections have no per-section settings, and diary agendas behave exactly like standard ones.
-- Accessibility refinements are still pending: out-of-month days in the calendar have low contrast, the small buttons are below the 24 px WCAG 2.2 target size, and the popup dialogs do not manage focus.
+- Mood is five faces stored as a number from 1 to 5 (not a slider), sections have no per-section settings, and diary agendas behave exactly like standard ones.
+- Accessibility refinements are still pending: the search panel and the overlay sidebar return focus when closed but do not keep it inside while open, and the page-turn arrows have no touch gesture.
+- Clicking "Open" before the 3D cover has finished loading opens the book without the opening animation.
+- Someone who is already signed in still sees the login and registration forms if they open those addresses.
 
 ---
 
 ## Roadmap
 
-- Rate limiting and abuse protection for authentication, then the accessibility refinements above.
+- Rate limiting and abuse protection for authentication, then the accessibility refinements above (focus trapping in dialogs) and a redirect away from the login pages for signed-in users.
 - Containerised deployment, HTTPS, secret management and continuous integration.
 - Drag-to-flip gesture for the pages.
 - Patterned cover themes (floral, dots, stripes) generated procedurally.

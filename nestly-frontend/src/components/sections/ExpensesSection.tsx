@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { RevealText } from "@/components/handwriting/HandwrittenReveal";
+import { AddItemButton } from "@/components/sections/AddItemButton";
 import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
-import { Button } from "@/components/ui/Button";
-import { TextInput } from "@/components/ui/TextInput";
+import { IconButton } from "@/components/ui/IconButton";
+import { LineInput } from "@/components/ui/LineInput";
+import { CloseIcon } from "@/components/ui/icons";
 import { useAutosave } from "@/lib/useAutosave";
 import { clampAmount, MAX_ITEM_TEXT_LENGTH, MAX_SECTION_ITEMS } from "@/lib/sectionLimits";
 
@@ -41,7 +43,7 @@ export function ExpensesSection({ initialData, onSave }: Readonly<Props>) {
 
     return (
         <ConfirmableSection
-            title="Expenses"
+            type="expenses"
             confirmed={confirmed}
             onConfirm={() => setConfirmed(true)}
             onEdit={() => setConfirmed(false)}
@@ -63,52 +65,45 @@ export function ExpensesSection({ initialData, onSave }: Readonly<Props>) {
                     ))}
                 </div>
             ) : (
-                <>
+                <div className="@container">
                     {items.map((item) => (
-                        <div key={item.id} className="flex h-8 items-center gap-2">
-                            <TextInput
-                                compact
+                        <div key={item.id} className="flex flex-wrap items-center gap-x-2">
+                            <LineInput
                                 placeholder="Label"
                                 aria-label="Label"
                                 maxLength={MAX_ITEM_TEXT_LENGTH}
                                 value={item.label}
                                 onChange={(e) => updateItem(item.id, { label: e.target.value })}
-                                className="min-w-0 flex-1"
+                                className="basis-full @md:basis-0 @md:flex-2"
                             />
-                            <TextInput
-                                compact
+                            <LineInput
                                 type="number"
                                 placeholder="Amount"
                                 aria-label="Amount"
                                 value={item.amount}
                                 onChange={(e) => updateItem(item.id, { amount: clampAmount(Number(e.target.value)) })}
-                                className="w-16 shrink-0"
+                                className="w-24 shrink-0"
                             />
-                            <TextInput
-                                compact
+                            <LineInput
                                 placeholder="Category"
                                 aria-label="Category"
                                 maxLength={MAX_ITEM_TEXT_LENGTH}
                                 value={item.category}
                                 onChange={(e) => updateItem(item.id, { category: e.target.value })}
-                                className="w-20 shrink-0"
+                                className="flex-1"
                             />
-                            <Button
-                                variant="dangerGhost"
-                                size="sm"
+                            <IconButton
+                                tone="danger"
                                 aria-label="Remove expense"
+                                className="-my-1.5 -mr-2"
                                 onClick={() => removeItem(item.id)}
                             >
-                                ✕
-                            </Button>
+                                <CloseIcon className="size-5" />
+                            </IconButton>
                         </div>
                     ))}
-                    <div className="flex h-8 items-center">
-                        <Button variant="secondary" size="sm" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS}>
-                            + Add expense
-                        </Button>
-                    </div>
-                </>
+                    <AddItemButton label="Add expense" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS} />
+                </div>
             )}
         </ConfirmableSection>
     );

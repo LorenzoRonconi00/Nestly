@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { RevealText } from "@/components/handwriting/HandwrittenReveal";
+import { AddItemButton } from "@/components/sections/AddItemButton";
 import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
-import { Button } from "@/components/ui/Button";
-import { TextInput } from "@/components/ui/TextInput";
+import { IconButton } from "@/components/ui/IconButton";
+import { LineInput } from "@/components/ui/LineInput";
+import { CloseIcon } from "@/components/ui/icons";
 import { useAutosave } from "@/lib/useAutosave";
 import { MAX_ITEM_TEXT_LENGTH, MAX_SECTION_ITEMS } from "@/lib/sectionLimits";
 
@@ -40,7 +42,7 @@ export function ChecklistSection({ initialData, onSave }: Readonly<Props>) {
 
     return (
         <ConfirmableSection
-            title="Checklist"
+            type="checklist"
             confirmed={confirmed}
             onConfirm={() => setConfirmed(true)}
             onEdit={() => setConfirmed(false)}
@@ -53,7 +55,7 @@ export function ChecklistSection({ initialData, onSave }: Readonly<Props>) {
                                 type="checkbox"
                                 checked={item.done}
                                 onChange={(e) => updateItem(item.id, { done: e.target.checked })}
-                                className="mt-2 h-4 w-4 accent-focus"
+                                className="mt-1.5 size-5 shrink-0 cursor-pointer accent-focus"
                             />
                             <span className={item.done ? "text-ink-soft line-through" : ""}>
                                 <RevealText text={item.text} />
@@ -64,32 +66,34 @@ export function ChecklistSection({ initialData, onSave }: Readonly<Props>) {
             ) : (
                 <>
                     {items.map((item) => (
-                        <div key={item.id} className="flex h-8 items-center gap-2">
-                            <input
-                                type="checkbox"
-                                aria-label="Done"
-                                checked={item.done}
-                                onChange={(e) => updateItem(item.id, { done: e.target.checked })}
-                                className="h-4 w-4 accent-focus"
-                            />
-                            <TextInput
-                                compact
+                        <div key={item.id} className="flex h-8 items-center gap-1">
+                            <label className="-my-1.5 -ml-2 grid size-11 shrink-0 cursor-pointer place-items-center">
+                                <input
+                                    type="checkbox"
+                                    aria-label="Done"
+                                    checked={item.done}
+                                    onChange={(e) => updateItem(item.id, { done: e.target.checked })}
+                                    className="size-5 cursor-pointer accent-focus"
+                                />
+                            </label>
+                            <LineInput
                                 aria-label="Item text"
                                 maxLength={MAX_ITEM_TEXT_LENGTH}
                                 value={item.text}
                                 onChange={(e) => updateItem(item.id, { text: e.target.value })}
-                                className="min-w-0 flex-1"
+                                className="flex-1"
                             />
-                            <Button variant="dangerGhost" size="sm" aria-label="Remove item" onClick={() => removeItem(item.id)}>
-                                ✕
-                            </Button>
+                            <IconButton
+                                tone="danger"
+                                aria-label="Remove item"
+                                className="-my-1.5 -mr-2"
+                                onClick={() => removeItem(item.id)}
+                            >
+                                <CloseIcon className="size-5" />
+                            </IconButton>
                         </div>
                     ))}
-                    <div className="flex h-8 items-center">
-                        <Button variant="secondary" size="sm" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS}>
-                            + Add item
-                        </Button>
-                    </div>
+                    <AddItemButton label="Add item" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS} />
                 </>
             )}
         </ConfirmableSection>

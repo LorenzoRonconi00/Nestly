@@ -284,7 +284,7 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
                     <SearchMenu agendaId={agendaId} onSelect={jumpToHit} />
                     <SoundToggle />
                 </BookTopBar>
-                <div className="mx-auto grid w-full max-w-6xl grid-cols-2 items-center gap-x-2 gap-y-4 px-4 pb-10 md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-6">
+                <div className="mx-auto grid w-full max-w-7xl grid-cols-2 items-center gap-x-2 gap-y-4 px-4 pb-10 md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-6">
                     <IconButton
                         aria-label="Previous page"
                         disabled={!canGoPrevious}

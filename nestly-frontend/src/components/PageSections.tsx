@@ -43,6 +43,6 @@ function SectionRenderer({ section, onSave }: { section: Section; onSave: (data:
         case "appointments":
             return <AppointmentsSection initialData={section.data} onSave={onSave} />;
         default:
-            return <p className="rounded-xl border bg-paper p-3 text-sm text-ink-soft">Unknown section type: {section.type}</p>;
+            return <p className="written text-ink-soft">Unknown section type: {section.type}</p>;
     }
 }

@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { RevealText } from "@/components/handwriting/HandwrittenReveal";
+import { AddItemButton } from "@/components/sections/AddItemButton";
 import { ConfirmableSection } from "@/components/sections/ConfirmableSection";
-import { Button } from "@/components/ui/Button";
-import { TextInput } from "@/components/ui/TextInput";
+import { IconButton } from "@/components/ui/IconButton";
+import { LineInput } from "@/components/ui/LineInput";
+import { CloseIcon } from "@/components/ui/icons";
 import { useAutosave } from "@/lib/useAutosave";
 import { MAX_ITEM_TEXT_LENGTH, MAX_SECTION_ITEMS } from "@/lib/sectionLimits";
 
@@ -40,7 +42,7 @@ export function AppointmentsSection({ initialData, onSave }: Readonly<Props>) {
 
     return (
         <ConfirmableSection
-            title="Appointments"
+            type="appointments"
             confirmed={confirmed}
             onConfirm={() => setConfirmed(true)}
             onEdit={() => setConfirmed(false)}
@@ -61,39 +63,33 @@ export function AppointmentsSection({ initialData, onSave }: Readonly<Props>) {
             ) : (
                 <>
                     {items.map((item) => (
-                        <div key={item.id} className="flex h-8 items-center gap-2">
-                            <TextInput
-                                compact
+                        <div key={item.id} className="flex flex-wrap items-center gap-x-2">
+                            <LineInput
                                 type="time"
                                 aria-label="Time"
                                 value={item.time}
                                 onChange={(e) => updateItem(item.id, { time: e.target.value })}
                                 className="w-28 shrink-0"
                             />
-                            <TextInput
-                                compact
+                            <LineInput
                                 placeholder="Description"
                                 aria-label="Description"
                                 maxLength={MAX_ITEM_TEXT_LENGTH}
                                 value={item.description}
                                 onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                                className="min-w-0 flex-1"
+                                className="flex-1 basis-40"
                             />
-                            <Button
-                                variant="dangerGhost"
-                                size="sm"
+                            <IconButton
+                                tone="danger"
                                 aria-label="Remove appointment"
+                                className="-my-1.5 -mr-2"
                                 onClick={() => removeItem(item.id)}
                             >
-                                ✕
-                            </Button>
+                                <CloseIcon className="size-5" />
+                            </IconButton>
                         </div>
                     ))}
-                    <div className="flex h-8 items-center">
-                        <Button variant="secondary" size="sm" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS}>
-                            + Add appointment
-                        </Button>
-                    </div>
+                    <AddItemButton label="Add appointment" onClick={addItem} disabled={items.length >= MAX_SECTION_ITEMS} />
                 </>
             )}
         </ConfirmableSection>
