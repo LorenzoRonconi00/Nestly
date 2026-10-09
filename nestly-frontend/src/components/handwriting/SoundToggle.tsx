@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { BellIcon, BellOffIcon } from "@/components/ui/icons";
 import { isMuted, setMuted } from "@/lib/sound";
 
 export function SoundToggle() {
@@ -15,8 +16,8 @@ export function SoundToggle() {
     }
 
     return (
-        <Button variant="ghost" size="sm" onClick={toggle} aria-pressed={muted} className="self-end">
-            {muted ? "Sound: off" : "Sound: on"}
-        </Button>
+        <IconButton aria-label="Writing sound" aria-pressed={!muted} onClick={toggle}>
+            {muted ? <BellOffIcon className="size-6" /> : <BellIcon className="size-6" />}
+        </IconButton>
     );
 }

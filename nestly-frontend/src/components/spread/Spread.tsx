@@ -4,7 +4,12 @@ const RING_IDS = ["top", "middle", "bottom"];
 
 export function Spread({ coverColor, children }: Readonly<{ coverColor: string; children: ReactNode }>) {
     return (
-        <div className="rounded-4xl p-3 shadow-xl" style={{ backgroundColor: coverColor }}>
+        <div className="relative isolate rounded-4xl p-3 shadow-[0_24px_48px_-16px_rgba(74,59,54,0.28)]">
+            <span
+                aria-hidden="true"
+                className="absolute inset-0 -z-10 rounded-4xl [filter:url(#crayon-soft)]"
+                style={{ backgroundColor: coverColor }}
+            />
             <div className="relative grid grid-cols-1 md:grid-cols-2">
                 {children}
                 <div

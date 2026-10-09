@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/Button";
+import { CrayonFrame } from "@/components/ui/CrayonFrame";
+import { AlertIcon } from "@/components/ui/icons";
+import { TEXT_BUTTON_CLASS } from "@/components/ui/textButton";
 import type { SaveProblem } from "@/lib/useSectionSaver";
 
 const MESSAGES: Record<SaveProblem, string> = {
@@ -22,13 +24,17 @@ export function SaveProblemBanner({ problem }: Readonly<{ problem: SaveProblem |
     return (
         <div
             role="alert"
-            className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-danger bg-sheet p-4 shadow-lg"
+            className="rise-quick fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md flex-col gap-2 p-5"
         >
-            <p className="text-sm font-semibold">{MESSAGES[problem]}</p>
+            <CrayonFrame filled />
+            <p className="relative flex items-start gap-2 font-semibold text-ink">
+                <AlertIcon className="mt-0.5 size-5 shrink-0 text-danger" />
+                {MESSAGES[problem]}
+            </p>
             {problem === "stale" && (
-                <Button size="sm" onClick={() => window.location.reload()}>
+                <button type="button" onClick={() => window.location.reload()} className={`relative self-start ${TEXT_BUTTON_CLASS}`}>
                     Reload
-                </Button>
+                </button>
             )}
         </div>
     );

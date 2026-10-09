@@ -3,26 +3,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SaveProblemBanner } from "@/components/SaveProblemBanner";
+import { BookSidebar } from "@/components/book/BookSidebar";
+import { BookTopBar } from "@/components/book/BookTopBar";
+import { DaysSidebar } from "@/components/book/DaysSidebar";
+import { PagesSidebar } from "@/components/book/PagesSidebar";
 import { LoadError } from "@/components/LoadError";
+import { SaveProblemBanner } from "@/components/SaveProblemBanner";
 import { SoundToggle } from "@/components/handwriting/SoundToggle";
 import { usePageReady } from "@/components/opening/OpeningProvider";
 import { BookStage } from "@/components/spread/BookStage";
-import { Button } from "@/components/ui/Button";
-import { TextLink } from "@/components/ui/TextLink";
+import { SearchMenu } from "@/components/spread/SearchMenu";
+import { IconButton } from "@/components/ui/IconButton";
+import { ArrowLeftIcon, ArrowRightIcon, CalendarIcon } from "@/components/ui/icons";
 import { parseCoverTheme } from "@/lib/coverTheme";
 import { addDays, formatDateLong, todayLocal } from "@/lib/date";
+import { loadJson } from "@/lib/loadJson";
 import { fetchDateRange, fetchNumberRange, type PageData } from "@/lib/pages";
+import type { SearchHit } from "@/lib/search";
 import type { Direction, FlipState, SpreadData } from "@/lib/spread";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useRestoreFocus } from "@/lib/useRestoreFocus";
 import { useSectionSaver } from "@/lib/useSectionSaver";
-import { CalendarMenu } from "@/components/spread/CalendarMenu";
-import { PageJumpMenu } from "@/components/spread/PageJumpMenu";
-import { SearchMenu } from "@/components/spread/SearchMenu";
-import type { SearchHit } from "@/lib/search";
-import { loadJson } from "@/lib/loadJson";
+import { useSidebarOpen } from "@/lib/useSidebarOpen";
 
-type AgendaInfo = { baseTemplate: string; coverTheme: string | null };
+type AgendaInfo = { name: string; baseTemplate: string; coverTheme: string | null };
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const PREFETCH_DELAY_MS = 500;
@@ -50,8 +54,12 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
     const searchParams = useSearchParams();
     const wide = useMediaQuery("(min-width: 768px)", true);
     const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", false);
+    const docked = useMediaQuery("(min-width: 1280px)", false);
+    const [sidebarOpen, setSidebarOpen] = useSidebarOpen();
+    const toggleRef = useRef<HTMLButtonElement>(null);
     const count = wide ? 2 : 1;
     const { save, problem } = useSectionSaver(agendaId);
+    useRestoreFocus(sidebarOpen && !docked, toggleRef);
     const [agenda, setAgenda] = useState<AgendaInfo | null | undefined>(undefined);
     const [agendaFailed, setAgendaFailed] = useState(false);
     const [agendaAttempt, setAgendaAttempt] = useState(0);
@@ -228,47 +236,87 @@ export function AgendaBook({ agendaId }: Readonly<{ agendaId: string }>) {
     if (!agenda || displayed === undefined) return null;
 
     const canGoPrevious = !displayed || !isNotebook || Number(displayed.start) > 1;
+    const sidebarId = "book-sidebar";
+    const sidebarLabel = isNotebook ? "Pages" : "Calendar";
+    const visiblePages = displayed ? displayed.pages : [];
+    const visibleDates = displayed ? visiblePages.flatMap((page) => (page.date ? [page.date] : [])) : [];
+    const visibleNumbers = displayed ? visiblePages.flatMap((page) => (page.pageNumber === null ? [] : [page.pageNumber])) : [];
+
+    function pickFromSidebar(start: string) {
+        jumpTo(start);
+        if (!docked) setSidebarOpen(false);
+    }
 
     return (
-        <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-4 py-8 md:max-w-5xl">
-            <div className="flex items-center justify-between">
-                <TextLink href={`/agendas/${agendaId}`} className="text-sm">
-                    ← Back to agenda
-                </TextLink>
-                <SoundToggle />
-            </div>
-            {displayed ? (
-                <BookStage
-                    coverColor={parseCoverTheme(agenda.coverTheme).color}
-                    displayed={displayed}
-                    flip={flip}
-                    titleFor={pageTitle}
-                    onSaveSection={save}
-                    onFlipDone={() => {
-                        if (flip) commit(flip.to);
-                    }}
-                />
-            ) : (
-                <LoadError onRetry={() => window.location.reload()} />
-            )}
-            <div className="flex flex-wrap items-center justify-center gap-3">
-                <Button variant="secondary" disabled={!canGoPrevious} onClick={() => go("prev")}>
-                    ← Previous
-                </Button>
+        <main className="paper-grain flex min-h-dvh bg-paper">
+            <BookSidebar
+                id={sidebarId}
+                label={sidebarLabel}
+                open={sidebarOpen}
+                docked={docked}
+                onClose={() => setSidebarOpen(false)}
+            >
                 {isNotebook ? (
-                    <PageJumpMenu onJump={jumpTo} />
+                    <PagesSidebar visible={visibleNumbers} onSelect={pickFromSidebar} />
                 ) : (
-                    <>
-                        <CalendarMenu agendaId={agendaId} selected={displayed?.start ?? dateStart} onSelect={jumpTo} />
-                        <Button variant="ghost" onClick={() => jumpTo(todayLocal())}>
-                            Today
-                        </Button>
-                    </>
+                    <DaysSidebar
+                        agendaId={agendaId}
+                        visible={visibleDates.length > 0 ? visibleDates : [dateStart]}
+                        onSelect={pickFromSidebar}
+                    />
                 )}
-                <SearchMenu agendaId={agendaId} onSelect={jumpToHit} />
-                <Button variant="secondary" onClick={() => go("next")}>
-                    Next →
-                </Button>
+            </BookSidebar>
+            <div className="flex min-w-0 flex-1 flex-col">
+                <BookTopBar
+                    name={agenda.name}
+                    backHref={`/agendas/${agendaId}`}
+                    sidebarId={sidebarId}
+                    sidebarLabel={sidebarOpen ? `Hide ${sidebarLabel.toLowerCase()}` : `Show ${sidebarLabel.toLowerCase()}`}
+                    sidebarOpen={sidebarOpen}
+                    onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                    toggleRef={toggleRef}
+                >
+                    {!isNotebook && (
+                        <IconButton aria-label="Go to today" onClick={() => jumpTo(todayLocal())}>
+                            <CalendarIcon className="size-6" />
+                        </IconButton>
+                    )}
+                    <SearchMenu agendaId={agendaId} onSelect={jumpToHit} />
+                    <SoundToggle />
+                </BookTopBar>
+                <div className="mx-auto grid w-full max-w-6xl grid-cols-2 items-center gap-x-2 gap-y-4 px-4 pb-10 md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-6">
+                    <IconButton
+                        aria-label="Previous page"
+                        disabled={!canGoPrevious}
+                        onClick={() => go("prev")}
+                        className="order-2 size-12 justify-self-start md:order-1 md:size-14"
+                    >
+                        <ArrowLeftIcon className="size-7" />
+                    </IconButton>
+                    <div className="order-1 col-span-2 min-w-0 md:order-2 md:col-span-1">
+                        {displayed ? (
+                            <BookStage
+                                coverColor={parseCoverTheme(agenda.coverTheme).color}
+                                displayed={displayed}
+                                flip={flip}
+                                titleFor={pageTitle}
+                                onSaveSection={save}
+                                onFlipDone={() => {
+                                    if (flip) commit(flip.to);
+                                }}
+                            />
+                        ) : (
+                            <LoadError onRetry={() => window.location.reload()} />
+                        )}
+                    </div>
+                    <IconButton
+                        aria-label="Next page"
+                        onClick={() => go("next")}
+                        className="order-3 size-12 justify-self-end md:size-14"
+                    >
+                        <ArrowRightIcon className="size-7" />
+                    </IconButton>
+                </div>
             </div>
             <SaveProblemBanner problem={problem} />
         </main>

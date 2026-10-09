@@ -21,9 +21,10 @@ export function PageFace({ title, side, shadeRef, children }: Readonly<Props>) {
 
     return (
         <article
-            className={`sheet-lines relative flex h-full min-h-[34rem] flex-col gap-8 bg-sheet p-8 ${SIDE_CLASSES[side]}`}
+            className={`sheet-lines relative flex h-full min-h-[34rem] flex-col gap-8 bg-sheet py-8 pr-6 pl-14 md:pr-8 ${SIDE_CLASSES[side]}`}
         >
-            <h2 className="font-hand text-2xl leading-8">{title}</h2>
+            <span aria-hidden="true" className="absolute inset-y-0 left-9 w-0.5 bg-crayon-red/80" />
+            <h2 className="font-hand text-2xl leading-8 text-ink">{title}</h2>
             {children}
             {shadow && (
                 <div

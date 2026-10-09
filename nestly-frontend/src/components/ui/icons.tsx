@@ -255,3 +255,58 @@ export function LayoutIcon(props: SVGProps<SVGSVGElement>) {
         </Icon>
     );
 }
+
+export function BellIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M6.4 16.6c.8-1.2 1.2-2.6 1.2-4.2 0-2.7 1.8-4.8 4.4-4.8s4.4 2.1 4.4 4.8c0 1.6.4 3 1.2 4.2-3.6.5-7.6.5-11.2 0Z" />
+            <path d="M10.4 19.4c.9.7 2.3.7 3.2 0" />
+            <path d="M12 5.4v2.2" />
+        </Icon>
+    );
+}
+
+export function BellOffIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M6.4 16.6c.8-1.2 1.2-2.6 1.2-4.2 0-2.7 1.8-4.8 4.4-4.8s4.4 2.1 4.4 4.8c0 1.6.4 3 1.2 4.2-3.6.5-7.6.5-11.2 0Z" />
+            <path d="M10.4 19.4c.9.7 2.3.7 3.2 0" />
+            <path d="M12 5.4v2.2" />
+            <path d="M4.6 4.8 19.4 19.2" />
+        </Icon>
+    );
+}
+
+export function SearchIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M10.8 4.6c3.4-.2 6.1 2.4 6.2 5.8.1 3.4-2.5 6.2-5.9 6.3-3.4.1-6.2-2.5-6.3-5.9-.1-3.3 2.5-6.1 6-6.2Z" />
+            <path d="m15.6 15.4 4 4.2" />
+        </Icon>
+    );
+}
+
+export function SidebarIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M4.6 5.4c5-.4 9.8-.4 14.8 0 .4 4.4.4 8.8 0 13.2-5 .4-9.8.4-14.8 0-.4-4.4-.4-8.8 0-13.2Z" />
+            <path d="M9.8 5.6c-.2 4.2-.2 8.6 0 12.8" />
+        </Icon>
+    );
+}
+
+export function ChevronLeftIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M14.6 6.2c-1.8 1.9-3.6 3.7-5.4 5.8 1.9 2 3.7 3.8 5.4 5.8" />
+        </Icon>
+    );
+}
+
+export function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
+    return (
+        <Icon {...props}>
+            <path d="M9.4 6.2c1.8 1.9 3.6 3.7 5.4 5.8-1.9 2-3.7 3.8-5.4 5.8" />
+        </Icon>
+    );
+}

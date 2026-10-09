@@ -1,20 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { TextInput } from "@/components/ui/TextInput";
+import { sectionInfo } from "@/components/structure/sectionTypes";
+import { CrayonFrame } from "@/components/ui/CrayonFrame";
+import { CrayonLine } from "@/components/ui/CrayonLine";
+import { IconButton } from "@/components/ui/IconButton";
+import { SearchIcon } from "@/components/ui/icons";
 import { formatDateLong } from "@/lib/date";
 import { searchAgenda, type SearchHit, type SearchOutcome, type SearchSegment } from "@/lib/search";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { useRestoreFocus } from "@/lib/useRestoreFocus";
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
-const SECTION_LABELS: Record<string, string> = {
-    freetext: "Free text",
-    checklist: "Checklist",
-    appointments: "Appointments",
-    expenses: "Expenses",
-};
 
 type Props = { agendaId: string; onSelect: (hit: SearchHit) => void };
 
@@ -33,7 +31,7 @@ function Segments({ segments }: Readonly<{ segments: SearchSegment[] }>) {
         <>
             {withOffsets(segments).map(({ text, match, offset }) =>
                 match ? (
-                    <mark key={offset} className="rounded bg-accent px-0.5 font-semibold text-ink">
+                    <mark key={offset} className="rounded bg-crayon-yellow px-0.5 font-semibold text-ink">
                         {text}
                     </mark>
                 ) : (
@@ -50,12 +48,15 @@ function hitTitle(hit: SearchHit) {
 
 export function SearchMenu({ agendaId, onSelect }: Readonly<Props>) {
     const dialogRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [outcome, setOutcome] = useState<{ query: string; result: SearchOutcome } | null>(null);
     const trimmed = query.trim();
     const debounced = useDebouncedValue(trimmed, DEBOUNCE_MS);
     const searchable = debounced.length >= MIN_QUERY_LENGTH;
+
+    useRestoreFocus(open, triggerRef);
 
     useEffect(() => {
         if (open) dialogRef.current?.querySelector("input")?.focus();
@@ -100,9 +101,9 @@ export function SearchMenu({ agendaId, onSelect }: Readonly<Props>) {
 
     return (
         <>
-            <Button variant="ghost" aria-haspopup="dialog" onClick={() => setOpen(true)}>
-                Search
-            </Button>
+            <IconButton ref={triggerRef} aria-label="Search" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+                <SearchIcon className="size-6" />
+            </IconButton>
             {open && (
                 <div
                     role="presentation"
@@ -116,41 +117,53 @@ export function SearchMenu({ agendaId, onSelect }: Readonly<Props>) {
                         role="dialog"
                         aria-modal="true"
                         aria-label="Search"
-                        className="flex max-h-[70vh] w-full max-w-md flex-col gap-3 rounded-2xl border border-border bg-sheet p-4 shadow-lg"
+                        className="rise-quick relative flex max-h-[70dvh] w-full max-w-md flex-col gap-3 p-5"
                     >
-                        <TextInput
-                            type="search"
-                            aria-label="Search this agenda"
-                            placeholder="Search this agenda"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter" && current?.hits[0]) select(current.hits[0]);
-                            }}
-                        />
+                        <CrayonFrame filled />
+                        <div className="group relative flex flex-col gap-1">
+                            <div className="flex items-center gap-2 rounded-t-xl px-1 transition-colors duration-150 ease-out group-focus-within:bg-accent-soft/60 motion-reduce:transition-none">
+                                <SearchIcon className="size-6 shrink-0 text-ink-soft" />
+                                <input
+                                    type="search"
+                                    aria-label="Search this agenda"
+                                    placeholder="Search this agenda"
+                                    value={query}
+                                    onChange={(event) => setQuery(event.target.value)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Enter" && current?.hits[0]) select(current.hits[0]);
+                                    }}
+                                    className="min-h-11 w-full min-w-0 bg-transparent text-base text-ink outline-none placeholder:text-ink-soft [&::-webkit-search-cancel-button]:hidden"
+                                />
+                            </div>
+                            <CrayonLine tone="neutral" />
+                        </div>
                         {status && (
-                            <p role="status" className="text-sm text-ink-soft">
+                            <p role="status" className="relative text-sm text-ink-soft">
                                 {status}
                             </p>
                         )}
                         {current && current.hits.length > 0 && (
-                            <ul className="flex flex-col gap-1 overflow-y-auto">
+                            <ul className="relative flex flex-col overflow-y-auto">
                                 {current.hits.map((hit) => (
                                     <li key={hit.pageId}>
                                         <button
                                             type="button"
                                             onClick={() => select(hit)}
-                                            className="w-full cursor-pointer rounded-xl px-3 py-2 text-left hover:bg-accent-soft"
+                                            className="w-full cursor-pointer rounded-xl px-3 py-2 text-left transition-colors duration-150 ease-out hover:bg-accent-soft motion-reduce:transition-none"
                                         >
-                                            <span className="font-hand text-lg">{hitTitle(hit)}</span>
-                                            {hit.snippets.map((snippet) => (
-                                                <span key={snippet.section} className="mt-0.5 block text-sm text-ink-soft">
-                                                    <span className="mr-2 text-xs font-bold tracking-wider uppercase">
-                                                        {SECTION_LABELS[snippet.section] ?? snippet.section}
+                                            <span className="font-hand text-xl">{hitTitle(hit)}</span>
+                                            {hit.snippets.map((snippet) => {
+                                                const info = sectionInfo(snippet.section);
+                                                return (
+                                                    <span key={snippet.section} className="mt-0.5 block text-sm text-ink-soft">
+                                                        <span className="mr-2 inline-flex items-center gap-1 align-middle text-xs font-bold tracking-wider uppercase">
+                                                            <info.Icon className="size-4" />
+                                                            <span>{info.label}</span>
+                                                        </span>
+                                                        <Segments segments={snippet.segments} />
                                                     </span>
-                                                    <Segments segments={snippet.segments} />
-                                                </span>
-                                            ))}
+                                                );
+                                            })}
                                         </button>
                                     </li>
                                 ))}
