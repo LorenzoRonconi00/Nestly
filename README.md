@@ -4,7 +4,7 @@
 
 Nestly is a full-stack web application for keeping a personal agenda, diary or notebook. It combines a classic structured-planner workflow (daily sections such as expenses, checklists, mood, appointments and free text) with a tactile, handcrafted interface: a WebGL book cover, a 3D page flip, and a handwriting-style reveal with sound.
 
-- **Status:** feature-complete for v1, with the simplifications listed under [Known limitations](#known-limitations); production deployment still to be done (see [Roadmap](#roadmap)).
+- **Status:** feature-complete for v1, with the simplifications listed under [Known limitations](#known-limitations);
 - **Monorepo:** `nestly-backend` (Spring Boot) and `nestly-frontend` (Next.js).
 
 <p align="center">
@@ -329,16 +329,6 @@ nestly/
 - Accessibility refinements are still pending: the search panel and the overlay sidebar return focus when closed but do not keep it inside while open, and the page-turn arrows have no touch gesture.
 - Clicking "Open" before the 3D cover has finished loading opens the book without the opening animation.
 - Someone who is already signed in still sees the login and registration forms if they open those addresses.
-
----
-
-## Roadmap
-
-- Rate limiting and abuse protection for authentication, then the accessibility refinements above (focus trapping in dialogs) and a redirect away from the login pages for signed-in users.
-- Containerised deployment, HTTPS, secret management and continuous integration.
-- Drag-to-flip gesture for the pages.
-- Patterned cover themes (floral, dots, stripes) generated procedurally.
-- Optional hardening: an automated end-to-end suite, search across all agendas.
 
 ---
 
