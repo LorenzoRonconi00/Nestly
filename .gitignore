@@ -16,3 +16,5 @@ nestly-frontend/.env*.local
 
 # Root env
 .env
+
+scripts/
