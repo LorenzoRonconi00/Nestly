@@ -7,6 +7,10 @@ Nestly is a full-stack web application for keeping a personal agenda, diary or n
 - **Status:** feature-complete for v1, with the simplifications listed under [Known limitations](#known-limitations); production deployment still to be done (see [Roadmap](#roadmap)).
 - **Monorepo:** `nestly-backend` (Spring Boot) and `nestly-frontend` (Next.js).
 
+<p align="center">
+  <img src="docs/media/nestly-demo.gif" alt="Nestly demo: the notebook cover opens, the pages flip, and a pencil writes the text" width="860">
+</p>
+
 ## Screenshots
 
 <table>
